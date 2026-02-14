@@ -4,11 +4,11 @@ import pandas as pd
 import json
 import io
 
-from src.evaluator import evaluate_code, evaluate_batch
+from src.evaluator import evaluate_code
 from src.scoring import DIMENSION_LABELS, WEIGHTS
 from src.github_fetcher import fetch_github_code
 from src.utils import detect_language
-from src.report_generator import generate_single_report, generate_batch_report
+from src.report_generator import generate_single_report
 
 
 # ── Helper Functions ──
@@ -377,6 +377,12 @@ section[data-testid="stSidebar"] {
     h3 {
         font-size: 18px !important;
     }
+
+    /* Scale down main title on mobile */
+    div[style*="font-size: 140px"] {
+        font-size: 70px !important;
+        letter-spacing: 4px !important;
+    }
 }
 
 /* Small mobile (< 480px) */
@@ -406,6 +412,12 @@ section[data-testid="stSidebar"] {
     .metric-pill {
         padding: 8px 12px !important;
     }
+
+    /* Even smaller main title on very small screens */
+    div[style*="font-size: 140px"] {
+        font-size: 50px !important;
+        letter-spacing: 2px !important;
+    }
 }
 
 /* ── Hide default Streamlit elements ── */
@@ -418,41 +430,36 @@ button[title="Deploy"] {display: none !important;}
 """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════
-# HEADER
+# HEADER - MASSIVE GLOWING TITLE
 # ══════════════════════════════════════════
-st.markdown("""
-<div style="text-align:center; padding: 30px 0 10px 0;" class="fade-in">
-    <div style="
-        font-size: 120px !important;
-        font-weight: 900;
-        line-height: 1.1;
-        background: linear-gradient(135deg, #6C63FF 0%, #B24BF3 50%, #6C63FF 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 8px;
-        letter-spacing: -3px;
-        filter: drop-shadow(0 0 25px rgba(108,99,255,0.6)) drop-shadow(0 0 80px rgba(178,75,243,0.35));
-    ">Echelon</div>
-    <p style="color: #8888A0; font-size: 15px; font-weight: 400; margin-top: 0;">
-        AI-powered code evaluation engine &mdash; scores submissions across 6 dimensions of engineering quality
-    </p>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(
+    '<div style="text-align:center; padding: 50px 0 40px 0; background: rgba(108,99,255,0.03); border-radius: 24px; margin-bottom: 0px;">'
+    '<div style="font-size: 140px; font-weight: 900; line-height: 1; font-family: Inter, sans-serif; '
+    'background: linear-gradient(135deg, #FFFFFF 0%, #8B7DFF 50%, #6C63FF 100%); '
+    '-webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; '
+    'margin-bottom: 20px; letter-spacing: 10px; text-transform: uppercase; '
+    'filter: drop-shadow(0 0 50px rgba(108,99,255,0.8)) drop-shadow(0 0 80px rgba(108,99,255,0.5)); '
+    'text-shadow: 0 0 60px rgba(108,99,255,0.6);">ECHELON</div>'
+    '<div style="width: 350px; height: 5px; margin: 0 auto 18px auto; border-radius: 10px; '
+    'background: linear-gradient(90deg, transparent, #6C63FF, transparent); '
+    'box-shadow: 0 0 25px rgba(108,99,255,0.8), 0 0 50px rgba(108,99,255,0.4);"></div>'
+    '<p style="color: #E0E0FF; font-size: 22px; font-weight: 600; margin: 0; '
+    'letter-spacing: 2.5px; text-transform: uppercase; '
+    'text-shadow: 0 0 30px rgba(108,99,255,0.5);">AI-Powered Code Evaluation Engine</p>'
+    '</div>',
+    unsafe_allow_html=True
+)
 
 # ══════════════════════════════════════════
 # INPUT SECTION
 # ══════════════════════════════════════════
-st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-
-tab_github, tab_upload, tab_paste, tab_batch = st.tabs(
-    ["GitHub URL", "File Upload", "Paste Code", "Batch Evaluation"]
+tab_github, tab_upload, tab_paste = st.tabs(
+    ["GitHub URL", "File Upload", "Paste Code"]
 )
 
 code = ""
 language = "Python"
 auto_detected = False
-batch_submissions = []
 
 with tab_github:
     github_url = st.text_input(
@@ -501,38 +508,7 @@ with tab_paste:
         code = pasted_code
         language = language_select
 
-with tab_batch:
-    st.markdown("""
-    <div style="margin-bottom: 20px;">
-        <p style="color: #8888A0; font-size: 14px; line-height: 1.6;">
-            Upload multiple code files to evaluate them all at once. Perfect for classrooms, 
-            coding competitions, or screening multiple candidates.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    batch_files = st.file_uploader(
-        "Upload multiple code files",
-        type=["py", "js", "ts", "java", "c", "cpp", "cc", "go", "rb", "rs"],
-        accept_multiple_files=True,
-    )
-
-    batch_submissions = []
-    if batch_files:
-        st.markdown(f"**{len(batch_files)} file(s) selected**")
-        for idx, file in enumerate(batch_files, 1):
-            try:
-                file_code = file.read().decode("utf-8", errors="replace")
-                file_language = detect_language(file.name)
-                batch_submissions.append(
-                    {
-                        "name": file.name,
-                        "code": file_code,
-                        "language": file_language,
-                    }
-                )
-            except Exception as e:
-                st.warning(f"Error reading {file.name}: {e}")
+# Single evaluation only - batch feature removed
 
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -543,17 +519,8 @@ problem_statement = st.text_area(
     height=100,
 )
 
-# ── Evaluation buttons ──
-col1, col2 = st.columns([1, 1])
-with col1:
-    evaluate_btn = st.button("Evaluate Single", type="primary", use_container_width=True)
-with col2:
-    evaluate_batch_btn = st.button(
-        "Evaluate Batch",
-        type="primary",
-        use_container_width=True,
-        disabled=len(batch_submissions) == 0,
-    )
+# ── Evaluation button ──
+evaluate_btn = st.button("Evaluate", type="primary", use_container_width=True)
 
 # ══════════════════════════════════════════
 # EVALUATION
@@ -895,231 +862,6 @@ if evaluate_btn:
     except Exception as e:
         st.error(f"PDF generation failed: {e}")
 
-# ══════════════════════════════════════════
-# BATCH EVALUATION
-# ══════════════════════════════════════════
-if evaluate_batch_btn:
-    if not batch_submissions:
-        st.warning("Please upload at least one code file in the Batch Evaluation tab.")
-        st.stop()
-
-    progress_placeholder = st.empty()
-    batch_results = None
-
-    try:
-        with progress_placeholder.container():
-            st.info(
-                f"Evaluating {len(batch_submissions)} submission(s)... This may take a few minutes."
-            )
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-
-        def update_progress(idx, total, result_):
-            progress_bar.progress(idx / total)
-            status_text.text(
-                f"Processing {idx}/{total}: {result_.get('name', 'Unknown')} - Score: {result_.get('overall_score', 0)}"
-            )
-
-        batch_results = evaluate_batch(
-            batch_submissions,
-            problem_statement,
-            progress_callback=update_progress,
-        )
-
-        progress_placeholder.empty()
-
-    except Exception as e:
-        st.error(f"Batch evaluation failed: {e}")
-        st.stop()
-
-    if batch_results:
-        summary = batch_results["summary"]
-        results = batch_results["results"]
-        total_time = batch_results["total_time"]
-        errors = batch_results["errors"]
-
-        # ── Summary Statistics ──
-        st.markdown("""
-        <div style="margin-top: 20px; margin-bottom: 20px;">
-            <h2 style="color: #F0F0F5; font-weight: 700; font-size: 28px; margin-bottom: 4px;">Batch Evaluation Results</h2>
-            <p style="color: #8888A0; font-size: 14px; margin-top: 0;">Summary of all submissions</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        col1b, col2b, col3b, col4b, col5b = st.columns(5)
-        with col1b:
-            st.markdown(f"""
-            <div class="metric-pill">
-                <div class="pill-value">{summary['total_submissions']}</div>
-                <div class="pill-label">Total</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col2b:
-            st.markdown(f"""
-            <div class="metric-pill">
-                <div class="pill-value" style="color: #00D26A;">{summary['successful']}</div>
-                <div class="pill-label">Successful</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col3b:
-            st.markdown(f"""
-            <div class="metric-pill">
-                <div class="pill-value" style="color: #FF3B5C;">{summary['failed']}</div>
-                <div class="pill-label">Failed</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col4b:
-            st.markdown(f"""
-            <div class="metric-pill">
-                <div class="pill-value" style="color: #6C63FF;">{summary['average_score']}</div>
-                <div class="pill-label">Avg Score</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col5b:
-            st.markdown(f"""
-            <div class="metric-pill">
-                <div class="pill-value" style="color: #8888A0;">{total_time}s</div>
-                <div class="pill-label">Total Time</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        if summary["successful"] > 0:
-            col_min, col_max, col_med = st.columns(3)
-            with col_min:
-                st.metric("Min Score", summary["min_score"])
-            with col_max:
-                st.metric("Max Score", summary["max_score"])
-            with col_med:
-                st.metric("Median Score", summary["median_score"])
-
-        # ── Results Table ──
-        st.markdown("""
-        <div style="margin-top: 30px; margin-bottom: 12px;">
-            <h3 style="color: #F0F0F5; font-weight: 700; font-size: 20px; margin-bottom: 4px;">Submission Results</h3>
-        </div>
-        """, unsafe_allow_html=True)
-
-        table_data = []
-        for r in results:
-            row = {
-                "Name": r.get("name", "Unknown"),
-                "Score": r.get("overall_score", 0),
-                "Verdict": r.get("verdict", "Error"),
-                "Language": r.get("language", "Unknown"),
-                "Time (s)": r.get("evaluation_time_seconds", 0),
-            }
-            dims_r = r.get("dimensions", {})
-            for key, label in DIMENSION_LABELS.items():
-                row[label] = dims_r.get(key, {}).get("score", 0) if dims_r else 0
-
-            if r.get("error"):
-                row["Status"] = "❌ Error"
-                row["Error"] = r["error"]
-            else:
-                row["Status"] = "✅ Success"
-                row["Error"] = ""
-            table_data.append(row)
-
-        df = pd.DataFrame(table_data)
-        base_cols = ["Name", "Score", "Verdict", "Language", "Status", "Time (s)"]
-        dim_cols = [DIMENSION_LABELS[k] for k in DIMENSION_LABELS]
-        other_cols = [c for c in df.columns if c not in base_cols + dim_cols]
-        df = df[base_cols + dim_cols + other_cols]
-
-        st.dataframe(
-            df,
-            use_container_width=True,
-            hide_index=True,
-            height=400,
-        )
-
-        # ── Export Options ──
-        st.markdown("""
-        <div style="margin-top: 30px; margin-bottom: 12px;">
-            <h3 style="color: #F0F0F5; font-weight: 700; font-size: 20px; margin-bottom: 4px;">Export Results</h3>
-        </div>
-        """, unsafe_allow_html=True)
-
-        col_csv, col_json, col_pdf = st.columns(3)
-
-        with col_csv:
-            csv_buffer = io.StringIO()
-            df.to_csv(csv_buffer, index=False)
-            st.download_button(
-                label="📥 Download CSV",
-                data=csv_buffer.getvalue(),
-                file_name=f"echelon_batch_results_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-                use_container_width=True,
-            )
-
-        with col_json:
-            json_data = {
-                "summary": summary,
-                "results": results,
-                "total_time": total_time,
-                "errors": errors,
-            }
-            json_str = json.dumps(json_data, indent=2)
-            st.download_button(
-                label="📥 Download JSON",
-                data=json_str,
-                file_name=f"echelon_batch_results_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.json",
-                mime="application/json",
-                use_container_width=True,
-            )
-
-        with col_pdf:
-            try:
-                pdf_buffer = generate_batch_report(batch_results, problem_statement)
-                st.download_button(
-                    label="📄 Download PDF Report",
-                    data=pdf_buffer.getvalue(),
-                    file_name=f"echelon_batch_report_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True,
-                )
-            except Exception as e:
-                st.error(f"PDF generation failed: {e}")
-
-        # ── Individual Results (Expandable) ──
-        if len(results) <= 10:
-            st.markdown("""
-            <div style="margin-top: 30px; margin-bottom: 12px;">
-                <h3 style="color: #F0F0F5; font-weight: 700; font-size: 20px; margin-bottom: 4px;">Detailed Results</h3>
-            </div>
-            """, unsafe_allow_html=True)
-
-            for r in results:
-                if r.get("error"):
-                    with st.expander(
-                        f"❌ {r.get('name', 'Unknown')} - Error", expanded=False
-                    ):
-                        st.error(r["error"])
-                else:
-                    with st.expander(
-                        f"✅ {r.get('name', 'Unknown')} - Score: {r.get('overall_score', 0)} ({r.get('verdict', 'Unknown')})",
-                        expanded=False,
-                    ):
-                        st.markdown(
-                            f"**Language:** {r.get('language', 'Unknown')} | **Time:** {r.get('evaluation_time_seconds', 0)}s"
-                        )
-                        st.markdown("**Strengths:**")
-                        for s in r.get("strengths", []):
-                            st.markdown(f"- {s}")
-                        st.markdown("**Improvements:**")
-                        for imp in r.get("improvements", []):
-                            st.markdown(f"- {imp}")
-
-        # ── Errors Summary ──
-        if errors:
-            st.markdown("""
-            <div style="margin-top: 30px; margin-bottom: 12px;">
-                <h3 style="color: #F0F0F5; font-weight: 700; font-size: 20px; margin-bottom: 4px;">Errors</h3>
-            </div>
-            """, unsafe_allow_html=True)
-            for err in errors:
-                st.warning(f"**{err['submission']}:** {err['error']}")
 
 # ── Footer ──
 st.markdown("""

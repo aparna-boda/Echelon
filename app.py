@@ -32,7 +32,16 @@ st.set_page_config(
     page_title="Echelon - AI Code Evaluator",
     page_icon="🔬",
     layout="wide",
+    initial_sidebar_state="expanded"
 )
+
+# Initialize session state for results
+if "evaluation_result" not in st.session_state:
+    st.session_state.evaluation_result = None
+if "evaluation_code" not in st.session_state:
+    st.session_state.evaluation_code = None
+if "evaluation_language" not in st.session_state:
+    st.session_state.evaluation_language = None
 
 # ══════════════════════════════════════════
 # GLOBAL CSS — Dark & Sleek Theme
@@ -48,16 +57,18 @@ st.markdown("""
     --color-weak: #FF6B35;
     --color-poor: #FF3B5C;
 
-    /* Brand Colors */
-    --color-primary: #6C63FF;
-    --color-primary-dark: #5A52D5;
+    /* Brand Colors - Purple-Magenta Palette (from reference image) */
+    --color-primary: #C44FD8;
+    --color-primary-dark: #9333EA;
+    --color-secondary: #A855F7;
 
-    /* UI Colors */
-    --color-background: #0a0a0f;
-    --color-background-lighter: #0d0d14;
-    --color-text-primary: #F0F0F5;
-    --color-text-secondary: #8888A0;
-    --color-border: rgba(255,255,255,0.08);
+    /* UI Colors - Purple Theme */
+    --color-background: #2B1F3D;
+    --color-background-lighter: #3A2E52;
+    --color-background-card: #4A3968;
+    --color-text-primary: #FFFFFF;
+    --color-text-secondary: #B4A4C4;
+    --color-border: rgba(168, 85, 247, 0.3);
 
     /* Spacing Scale */
     --space-xs: 4px;
@@ -73,104 +84,72 @@ st.markdown("""
 }
 
 /* ── Base overrides ── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 html, body, [class*="st-"] {
     font-family: 'Inter', sans-serif;
 }
 .stApp {
-    background: #0a0a0f;
+    background: #2B1F3D;
 }
 header[data-testid="stHeader"] {
     background: transparent !important;
 }
 section[data-testid="stSidebar"] {
-    background: #0d0d14;
+    background: #3A2E52;
 }
 
 /* ── Glass card ── */
 .glass-card {
-    background: rgba(255,255,255,0.03);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 16px;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    overflow: hidden;
-    position: relative;
-}
-.glass-card:hover {
-    border-color: rgba(108,99,255,0.25);
-    box-shadow: 0 0 20px rgba(108,99,255,0.08);
+    background: rgba(58, 46, 82, 0.9);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 14px;
 }
 
 /* ── Tabs ── */
 .stTabs [data-baseweb="tab-list"] {
     gap: 8px;
     background: transparent;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(168, 85, 247, 0.2);
     padding-bottom: 0;
 }
 .stTabs [data-baseweb="tab"] {
-    background: rgba(255,255,255,0.03);
+    background: rgba(168, 85, 247, 0.05);
     border-radius: 10px 10px 0 0;
-    border: 1px solid rgba(255,255,255,0.06);
+    border: 1px solid rgba(168, 85, 247, 0.2);
     border-bottom: none;
-    color: #8888A0;
+    color: #B4A4C4;
     padding: 10px 24px;
     font-weight: 500;
-    transition: all 0.2s ease;
-}
-.stTabs [data-baseweb="tab"]:hover {
-    background: rgba(108,99,255,0.08);
-    color: #F0F0F5;
 }
 .stTabs [aria-selected="true"] {
-    background: rgba(108,99,255,0.12) !important;
-    color: #F0F0F5 !important;
-    border-color: rgba(108,99,255,0.3) !important;
+    background: rgba(196, 79, 216, 0.15) !important;
+    color: #FFFFFF !important;
+    border-color: rgba(168, 85, 247, 0.5) !important;
 }
 .stTabs [data-baseweb="tab-highlight"] {
-    background-color: #6C63FF !important;
+    background-color: #C44FD8 !important;
 }
 
 /* ── Buttons ── */
 .stButton > button {
-    background: linear-gradient(135deg, #6C63FF 0%, #5A52D5 100%);
-    color: #F0F0F5;
+    background: #C44FD8;
+    color: #FFFFFF;
     border: none;
-    border-radius: 12px;
-    padding: 12px 32px;
+    border-radius: 8px;
+    padding: 10px 28px;
     font-weight: 600;
     font-size: 16px;
-    letter-spacing: 0.3px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(108,99,255,0.25);
-}
-.stButton > button:hover {
-    box-shadow: 0 6px 25px rgba(108,99,255,0.45);
-    transform: translateY(-1px);
-    background: linear-gradient(135deg, #7B73FF 0%, #6C63FF 100%);
-}
-.stButton > button:active {
-    transform: translateY(0px);
 }
 
 /* ── Text inputs, text areas, selectboxes ── */
 .stTextInput > div > div > input,
 .stTextArea > div > div > textarea {
-    background: rgba(255,255,255,0.03) !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
-    border-radius: 10px !important;
-    color: #F0F0F5 !important;
-    transition: border-color 0.2s ease;
-}
-.stTextInput > div > div > input:focus,
-.stTextArea > div > div > textarea:focus {
-    border-color: rgba(108,99,255,0.5) !important;
-    box-shadow: 0 0 10px rgba(108,99,255,0.15) !important;
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    border-radius: 8px !important;
+    color: #FFFFFF !important;
 }
 .stSelectbox > div > div {
     background: rgba(255,255,255,0.03) !important;
@@ -188,17 +167,17 @@ section[data-testid="stSidebar"] {
 
 /* ── Expanders ── */
 .streamlit-expanderHeader {
-    background: rgba(255,255,255,0.03) !important;
+    background: rgba(168, 85, 247, 0.1) !important;
     border-radius: 10px !important;
-    border: 1px solid rgba(255,255,255,0.06) !important;
-    color: #F0F0F5 !important;
+    border: 1px solid rgba(168, 85, 247, 0.3) !important;
+    color: #FFFFFF !important;
     font-weight: 500;
     margin-top: 8px !important;
     padding: 10px 12px !important;
 }
 [data-testid="stExpander"] {
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(168, 85, 247, 0.05);
+    border: 1px solid rgba(168, 85, 247, 0.2);
     border-radius: 12px;
     margin-top: 8px;
     margin-bottom: 16px;
@@ -301,13 +280,13 @@ section[data-testid="stSidebar"] {
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0a0a0f; }
+::-webkit-scrollbar-track { background: #2B1F3D; }
 ::-webkit-scrollbar-thumb {
-    background: rgba(108,99,255,0.3);
+    background: rgba(168, 85, 247, 0.4);
     border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(108,99,255,0.5);
+    background: rgba(168, 85, 247, 0.6);
 }
 
 /* ══════════════════════════════════════════
@@ -380,9 +359,9 @@ section[data-testid="stSidebar"] {
     }
 
     /* Scale down main title on mobile */
-    div[style*="font-size: 140px"] {
-        font-size: 70px !important;
-        letter-spacing: 4px !important;
+    h1[style*="font-size: 110px"] {
+        font-size: 64px !important;
+        letter-spacing: 8px !important;
     }
 }
 
@@ -415,39 +394,61 @@ section[data-testid="stSidebar"] {
     }
 
     /* Even smaller main title on very small screens */
-    div[style*="font-size: 140px"] {
-        font-size: 50px !important;
-        letter-spacing: 2px !important;
+    h1[style*="font-size: 110px"] {
+        font-size: 48px !important;
+        letter-spacing: 4px !important;
     }
 }
 
 /* ── Expander styling (slide-in panel look) ── */
 .stExpander {
     background: rgba(255,255,255,0.02) !important;
-    border: 1px solid rgba(108,99,255,0.2) !important;
+    border: 1px solid rgba(168, 85, 247, 0.2) !important;
     border-radius: 12px !important;
     margin-top: 12px !important;
     overflow: hidden !important;
 }
 .stExpander summary {
-    background: rgba(108,99,255,0.08) !important;
+    background: rgba(168, 85, 247, 0.08) !important;
     padding: 12px 16px !important;
     border-radius: 10px !important;
     font-weight: 600 !important;
-    color: #A299FF !important;
+    color: #C44FD8 !important;
     cursor: pointer !important;
     transition: all 0.2s ease !important;
+    list-style: none !important;
+}
+.stExpander summary::-webkit-details-marker {
+    display: none !important;
+}
+.stExpander summary::marker {
+    display: none !important;
+}
+.stExpander summary svg {
+    display: none !important;
 }
 .stExpander summary:hover {
-    background: rgba(108,99,255,0.15) !important;
-    color: #B8B0FF !important;
+    background: rgba(168, 85, 247, 0.15) !important;
+    color: #A855F7 !important;
 }
 .stExpander[open] summary {
-    border-bottom: 1px solid rgba(108,99,255,0.15) !important;
+    border-bottom: 1px solid rgba(168, 85, 247, 0.15) !important;
     margin-bottom: 12px !important;
 }
 .stExpander > div > div {
     padding: 12px 16px !important;
+}
+details summary {
+    list-style: none !important;
+}
+details summary::-webkit-details-marker {
+    display: none !important;
+}
+[data-testid="stExpander"] summary {
+    list-style-type: none !important;
+}
+[data-testid="stExpander"] svg {
+    fill: #C44FD8 !important;
 }
 
 /* ── Hide default Streamlit elements ── */
@@ -460,33 +461,52 @@ button[title="Deploy"] {display: none !important;}
 """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════
-# HEADER - MASSIVE GLOWING TITLE
+# HEADER - PURPLE-MAGENTA TITLE
 # ══════════════════════════════════════════
-st.markdown(
-    '<div style="text-align:center; padding: 50px 0 40px 0; background: rgba(108,99,255,0.03); border-radius: 24px; margin-bottom: 0px;">'
-    '<div style="font-size: 140px; font-weight: 900; line-height: 1; font-family: Inter, sans-serif; '
-    'background: linear-gradient(135deg, #FFFFFF 0%, #8B7DFF 50%, #6C63FF 100%); '
-    '-webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; '
-    'margin-bottom: 20px; letter-spacing: 10px; text-transform: uppercase; '
-    'filter: drop-shadow(0 0 50px rgba(108,99,255,0.8)) drop-shadow(0 0 80px rgba(108,99,255,0.5)); '
-    'text-shadow: 0 0 60px rgba(108,99,255,0.6);">ECHELON</div>'
-    '<div style="width: 350px; height: 5px; margin: 0 auto 18px auto; border-radius: 10px; '
-    'background: linear-gradient(90deg, transparent, #6C63FF, transparent); '
-    'box-shadow: 0 0 25px rgba(108,99,255,0.8), 0 0 50px rgba(108,99,255,0.4);"></div>'
-    '<p style="color: #E0E0FF; font-size: 22px; font-weight: 600; margin: 0; '
-    'letter-spacing: 2.5px; text-transform: uppercase; '
-    'text-shadow: 0 0 30px rgba(108,99,255,0.5);">AI-Powered Code Evaluation Engine</p>'
-    '</div>',
-    unsafe_allow_html=True
-)
+st.markdown("""
+<div style="text-align:center; padding: 50px 20px 40px 20px; background: rgba(168, 85, 247, 0.08); border-radius: 24px; margin-bottom: 30px;">
+    <h1 style="font-size: 110px; 
+                font-weight: 900; 
+                line-height: 1; 
+                background: linear-gradient(135deg, #FFFFFF 0%, #F0E6FF 25%, #E6D5FF 50%, #D4B5FF 75%, #C44FD8 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                margin: 0 0 25px 0; 
+                letter-spacing: 18px; 
+                text-transform: uppercase;
+                text-shadow: none;
+                filter: drop-shadow(0 0 40px rgba(196, 79, 216, 0.8)) 
+                        drop-shadow(0 0 60px rgba(255, 255, 255, 0.3))
+                        drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+                font-family: 'Inter', 'Arial Black', sans-serif;
+                border-radius: 20px;
+                padding: 10px 20px;
+                display: inline-block;">
+        ECHELON
+    </h1>
+    <div style="width: 400px; 
+                height: 5px; 
+                margin: 0 auto 20px auto; 
+                border-radius: 10px; 
+                background: linear-gradient(90deg, transparent, #9333EA, #C44FD8, #A855F7, transparent);
+                box-shadow: 0 0 30px rgba(168, 85, 247, 0.8);">
+    </div>
+    <p style="color: #B4A4C4; 
+              font-size: 20px; 
+              font-weight: 700; 
+              margin: 0; 
+              letter-spacing: 4px; 
+              text-transform: uppercase;
+              text-shadow: 0 0 20px rgba(168, 85, 247, 0.5);">
+        AI-Powered Code Evaluation Engine
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
 # ══════════════════════════════════════════
 # INPUT SECTION
 # ══════════════════════════════════════════
-<<<<<<< HEAD
-tab_github, tab_upload, tab_paste, tab_similarity = st.tabs(
-    ["GitHub URL", "File Upload", "Paste Code", "Similarity Check"]
-=======
 
 # ── Problem statement (required) ──
 problem_statement = st.text_area(
@@ -498,9 +518,8 @@ problem_statement = st.text_area(
 
 st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
 
-tab_github, tab_upload, tab_paste = st.tabs(
-    ["GitHub URL", "File Upload", "Paste Code"]
->>>>>>> a9e3215d0a4e59154f2d98cb0e354bc56544ff76
+tab_github, tab_upload, tab_paste, tab_similarity = st.tabs(
+    ["GitHub URL", "File Upload", "Paste Code", "Similarity Check"]
 )
 
 code = ""
@@ -520,7 +539,7 @@ with tab_github:
             st.success(
                 f"Fetched! Language detected: **{language}** ({len(code.splitlines())} lines)"
             )
-            with st.expander("Preview fetched code", expanded=False):
+            if st.checkbox("👁️ Preview fetched code", key="preview_github"):
                 st.code(code, language=language.lower())
         except Exception as e:
             st.error(f"Failed to fetch: {e}")
@@ -537,7 +556,7 @@ with tab_upload:
         st.success(
             f"Loaded **{uploaded_file.name}** — Language: **{language}** ({len(code.splitlines())} lines)"
         )
-        with st.expander("Preview uploaded code", expanded=False):
+        if st.checkbox("👁️ Preview uploaded code", key="preview_upload"):
             st.code(code, language=language.lower())
 
 with tab_paste:
@@ -564,7 +583,6 @@ with tab_similarity:
     </div>
     """, unsafe_allow_html=True)
 
-<<<<<<< HEAD
     sim_files = st.file_uploader(
         "Upload code files to compare",
         type=["py", "js", "ts", "java", "c", "cpp", "cc", "go", "rb", "rs"],
@@ -642,8 +660,8 @@ with tab_similarity:
             colorscale=[
                 [0.0, "#0d1b2a"],
                 [0.3, "#1b2838"],
-                [0.5, "#6C63FF"],
-                [0.7, "#9b59b6"],
+                [0.5, "#A855F7"],
+                [0.7, "#C44FD8"],
                 [1.0, "#FF3B5C"],
             ],
             zmin=0,
@@ -683,7 +701,7 @@ with tab_similarity:
                 border_color = "#FF3B5C" if is_high else "#FFB800"
                 flag_label = "HIGH" if is_high else "MEDIUM"
                 flag_bg = "rgba(255,59,92,0.15)" if is_high else "rgba(255,184,0,0.15)"
-                bar_gradient = f"linear-gradient(90deg, #6C63FF, {border_color})"
+                bar_gradient = f"linear-gradient(90deg, #A855F7, {border_color})"
                 overall_val = pair["overall"]
 
                 struct_html = ""
@@ -743,7 +761,7 @@ with tab_similarity:
             """, unsafe_allow_html=True)
 
         # ── All pairs table (collapsed) ──
-        with st.expander("View all pair scores", expanded=False):
+        if st.checkbox("📊 View all pair scores", key="view_all_pairs"):
             for pair in sim_result["pairs"]:
                 struct_str = f"{pair['structural_sim']:.1f}%" if pair["structural_sim"] is not None else "N/A"
                 st.markdown(
@@ -752,15 +770,6 @@ with tab_similarity:
                     f"(Text: {pair['text_sim']:.1f}%, Token: {pair['token_sim']:.1f}%, Structural: {struct_str})"
                 )
 
-# ── Optional problem context ──
-problem_statement = st.text_area(
-    "Problem Context (optional)",
-    placeholder="Describe the problem being solved — helps the AI evaluate correctness and approach...",
-    height=100,
-)
-
-=======
->>>>>>> a9e3215d0a4e59154f2d98cb0e354bc56544ff76
 # ── Evaluation button ──
 evaluate_btn = st.button("Evaluate", type="primary", use_container_width=True)
 
@@ -808,49 +817,98 @@ if evaluate_btn:
     if result.get("error"):
         st.error(f"Evaluation error: {result['error']}")
         if result.get("raw_response"):
-            with st.expander("Raw LLM response"):
+            if st.checkbox("🤖 Show raw LLM response", key="show_raw_llm"):
                 st.text(result["raw_response"])
         st.stop()
 
-    # ══════════════════════════════════════════
-    # RESULTS DISPLAY
-    # ══════════════════════════════════════════
+    # Store results in session state
+    st.session_state.evaluation_result = result
+    st.session_state.evaluation_code = code
+    st.session_state.evaluation_language = language
+    
+    st.success("✅ Evaluation complete! Check the sidebar for results →")
+    st.rerun()
 
+# ══════════════════════════════════════════
+# SIDEBAR - FINAL SCORE ONLY
+# ══════════════════════════════════════════
+if st.session_state.evaluation_result is not None:
+    with st.sidebar:
+        result = st.session_state.evaluation_result
+        language = st.session_state.evaluation_language
+        
+        # Add a clear button at the top
+        if st.button("🔄 New Evaluation", use_container_width=True):
+            st.session_state.evaluation_result = None
+            st.session_state.evaluation_code = None
+            st.session_state.evaluation_language = None
+            st.rerun()
+        
+        st.markdown("---")
+        
+        overall_score = result["overall_score"]
+        verdict = result["verdict"]
+        verdict_emoji = result["verdict_emoji"]
+        eval_time = result["evaluation_time_seconds"]
+
+        # Score color mapping
+        score_color = get_score_color(overall_score)
+
+        # ── Hero Score Ring (Final Score Only) ──
+        score_deg = int((overall_score / 100) * 360)
+        st.markdown(
+            f"""
+        <div class="fade-in" style="text-align: center; padding: 30px 0 20px 0;">
+            <div class="score-ring-outer" style="
+                width: 200px;
+                height: 200px;
+                margin: 0 auto;
+                background: conic-gradient({score_color} {score_deg}deg, #1a1a2e {score_deg}deg);
+                box-shadow: 0 0 40px rgba({int(score_color[1:3],16)},{int(score_color[3:5],16)},{int(score_color[5:7],16)},0.3);
+            ">
+                <div class="score-ring-inner">
+                    <div style="font-size: 56px; font-weight: 900; color: {score_color}; line-height: 1;">{overall_score}</div>
+                    <div style="font-size: 12px; color: #8888A0; margin-top: 4px;">out of 100</div>
+                </div>
+            </div>
+            <div style="font-size: 24px; margin-top: 18px; font-weight: 700; color: #F0F0F5;">
+                {verdict_emoji} {verdict}
+            </div>
+            <div style="font-size: 13px; color: #8888A0; margin-top: 8px;">
+                {language} • Evaluated in {eval_time}s
+            </div>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
+        
+        st.markdown("---")
+        st.markdown('<div style="text-align: center; color: #8888A0; font-size: 12px; padding: 10px;">Scroll down in the main panel for detailed analysis ↓</div>', unsafe_allow_html=True)
+
+# ══════════════════════════════════════════
+# MAIN PANEL - DETAILED RESULTS
+# ══════════════════════════════════════════
+if st.session_state.evaluation_result is not None:
+    result = st.session_state.evaluation_result
+    code = st.session_state.evaluation_code
+    language = st.session_state.evaluation_language
+    dims = result["dimensions"]
     overall_score = result["overall_score"]
     verdict = result["verdict"]
     verdict_emoji = result["verdict_emoji"]
     eval_time = result["evaluation_time_seconds"]
-    dims = result["dimensions"]
-
-    # Score color mapping
     score_color = get_score_color(overall_score)
-
-    # ── Hero Score Ring ──
-    score_deg = int((overall_score / 100) * 360)
-    st.markdown(
-        f"""
-    <div class="fade-in" style="text-align: center; padding: 30px 0 20px 0;">
-        <div class="score-ring-outer" style="
-            background: conic-gradient({score_color} {score_deg}deg, #1a1a2e {score_deg}deg);
-            box-shadow: 0 0 40px rgba({int(score_color[1:3],16)},{int(score_color[3:5],16)},{int(score_color[5:7],16)},0.25);
-        ">
-            <div class="score-ring-inner">
-                <div style="font-size: 48px; font-weight: 800; color: {score_color}; line-height: 1;">{overall_score}</div>
-                <div style="font-size: 12px; color: #8888A0; margin-top: 2px;">out of 100</div>
-            </div>
-        </div>
-        <div style="font-size: 24px; margin-top: 16px; font-weight: 600; color: #F0F0F5;">
-            {verdict_emoji} {verdict}
-        </div>
-        <div style="font-size: 13px; color: #8888A0; margin-top: 6px;">
-            {language} &bull; evaluated in {eval_time}s
-        </div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
-
+    
+    st.markdown("---")
+    
     # ── Radar Chart ──
+    st.markdown("""
+    <div style="margin: 20px 0 15px 0;">
+        <h2 style="color: #F0F0F5; font-weight: 700; font-size: 24px; margin: 0;">📊 Evaluation Results</h2>
+        <p style="color: #8888A0; font-size: 14px; margin-top: 5px;">6-Dimension code quality analysis</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
     labels = [DIMENSION_LABELS[k] for k in DIMENSION_LABELS]
     scores = [dims.get(k, {}).get("score", 0) for k in DIMENSION_LABELS]
 
@@ -896,9 +954,9 @@ if evaluate_btn:
 
     # ── Dimension Breakdown ──
     st.markdown("""
-    <div style="margin-top: 10px; margin-bottom: 20px;">
+    <div style="margin-top: 30px; margin-bottom: 20px;">
         <h3 style="color: #F0F0F5; font-weight: 700; font-size: 20px; margin-bottom: 4px;">Dimension Breakdown</h3>
-        <p style="color: #8888A0; font-size: 13px; margin-top: 0;">Score across each evaluation dimension</p>
+        <p style="color: #8888A0; font-size: 13px; margin-top: 0;">Detailed score and analysis for each dimension</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -932,42 +990,52 @@ if evaluate_btn:
                 </div>
                 ''', unsafe_allow_html=True)
 
-<<<<<<< HEAD
-                # Details expander
-                with st.expander("View Details", expanded=False):
-                    st.markdown(f"### {label}")
-                    st.divider()
-=======
-                # Details in a styled expander
-                with st.expander(">>", expanded=False):
->>>>>>> a9e3215d0a4e59154f2d98cb0e354bc56544ff76
-                    for field_key, field_val in dim.items():
-                        if field_key == "score":
-                            continue
-                        title = field_key.replace("_", " ").title()
-                        if field_key == "suggestion":
-<<<<<<< HEAD
-                            st.markdown(f"**Suggestion:** {field_val}")
-=======
-                            st.markdown(f"**💡 Suggestion**")
-                            st.info(field_val)
->>>>>>> a9e3215d0a4e59154f2d98cb0e354bc56544ff76
-                        elif isinstance(field_val, list):
-                            st.markdown(f"**{title}:** {', '.join(str(v) for v in field_val) if field_val else 'None'}")
-                        elif isinstance(field_val, bool):
-<<<<<<< HEAD
-                            icon = "Yes" if field_val else "No"
-                            color = "#00D26A" if field_val else "#FF3B5C"
-                            st.markdown(
-                                f"**{title}:** <span style='color:{color}; font-weight:600;'>{icon}</span>",
-                                unsafe_allow_html=True
-                            )
-=======
-                            icon = "✅" if field_val else "❌"
-                            st.markdown(f"**{title}:** {icon} {'Yes' if field_val else 'No'}")
->>>>>>> a9e3215d0a4e59154f2d98cb0e354bc56544ff76
-                        else:
-                            st.markdown(f"**{title}:** {field_val}")
+                # Details section - displayed directly under the progress bar
+                st.markdown('<div style="margin-top: 16px;"></div>', unsafe_allow_html=True)
+                
+                for field_key, field_val in dim.items():
+                    if field_key == "score":
+                        continue
+                    if not field_val:
+                        continue
+                        
+                    title = field_key.replace("_", " ").title()
+                    
+                    if field_key == "suggestion":
+                        st.markdown(
+                            f'<div style="margin-bottom: 10px; padding: 10px; background: rgba(168, 85, 247, 0.08); border-left: 3px solid #C44FD8; border-radius: 6px;">'
+                            f'<div style="color: #C44FD8; font-weight: 600; font-size: 11px; margin-bottom: 5px;">💡 SUGGESTION</div>'
+                            f'<div style="color: #E0E0E8; font-size: 12px; line-height: 1.5;">{field_val}</div>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+                    elif isinstance(field_val, list):
+                        items = ', '.join(str(v) for v in field_val)
+                        st.markdown(
+                            f'<div style="margin-bottom: 8px;">'
+                            f'<span style="color: #9B94FF; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">{title}:</span> '
+                            f'<span style="color: #D0D0DC; font-size: 11px;">{items}</span>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+                    elif isinstance(field_val, bool):
+                        icon = "✅" if field_val else "❌"
+                        status = "Yes" if field_val else "No"
+                        st.markdown(
+                            f'<div style="margin-bottom: 8px;">'
+                            f'<span style="color: #9B94FF; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">{title}:</span> '
+                            f'{icon} <span style="color: #D0D0DC; font-size: 11px;">{status}</span>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        st.markdown(
+                            f'<div style="margin-bottom: 8px;">'
+                            f'<span style="color: #9B94FF; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">{title}:</span> '
+                            f'<span style="color: #D0D0DC; font-size: 11px;">{field_val}</span>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
 
     # ── Strengths & Improvements ──
     st.markdown('<div style="height: 20px;"></div>', unsafe_allow_html=True)
@@ -988,7 +1056,7 @@ if evaluate_btn:
         st.markdown(
             f"""
         <div class="glass-card fade-in" style="border-left: 3px solid #00D26A;">
-            <h4 style="color: #00D26A; font-weight: 700; font-size: 16px; margin-bottom: 16px; margin-top: 0;">Strengths</h4>
+            <h4 style="color: #00D26A; font-weight: 900; font-size: 22px; margin-bottom: 16px; margin-top: 0;">Strengths</h4>
             {strengths_html}
         </div>
         """,
@@ -1010,7 +1078,7 @@ if evaluate_btn:
         st.markdown(
             f"""
         <div class="glass-card fade-in" style="border-left: 3px solid #FFB800;">
-            <h4 style="color: #FFB800; font-weight: 700; font-size: 16px; margin-bottom: 16px; margin-top: 0;">Areas for Improvement</h4>
+            <h4 style="color: #FFB800; font-weight: 900; font-size: 22px; margin-bottom: 16px; margin-top: 0;">Areas for Improvement</h4>
             {improvements_html}
         </div>
         """,
@@ -1022,21 +1090,23 @@ if evaluate_btn:
     if better and better.strip() and better.strip().lower() != "n/a":
         st.markdown(
             f"""
-        <div class="glass-card fade-in" style="border-left: 3px solid #6C63FF;">
-            <h4 style="color: #6C63FF; font-weight: 700; font-size: 16px; margin-bottom: 10px; margin-top: 0;">Better Approach</h4>
+        <div class="glass-card fade-in" style="border-left: 3px solid #C44FD8;">
+            <h4 style="color: #C44FD8; font-weight: 700; font-size: 16px; margin-bottom: 10px; margin-top: 0;">Better Approach</h4>
             <p style="color: #F0F0F5; font-size: 14px; line-height: 1.6; margin: 0;">{better}</p>
         </div>
         """,
             unsafe_allow_html=True,
         )
 
-    # ── Static Analysis (Python only) ──
+    # ── Static Analysis ──
     sa = result.get("static_analysis")
     if sa:
-        st.markdown("""
+        # Determine analysis method based on language
+        analysis_method = "AST inspection results" if language == "Python" else "Tree-sitter analysis results"
+        st.markdown(f"""
         <div style="margin-top: 20px; margin-bottom: 12px;">
             <h3 style="color: #F0F0F5; font-weight: 700; font-size: 20px; margin-bottom: 4px;">Static Analysis</h3>
-            <p style="color: #8888A0; font-size: 13px; margin-top: 0;">Python AST inspection results</p>
+            <p style="color: #8888A0; font-size: 13px; margin-top: 0;">{language} {analysis_method}</p>
         </div>
         """, unsafe_allow_html=True)
 

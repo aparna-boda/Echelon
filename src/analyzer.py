@@ -155,3 +155,28 @@ def format_analysis_for_prompt(analysis: dict) -> str:
         parts.append(f"Variable names: {', '.join(analysis['variable_names'][:15])}")
 
     return "\n".join(parts)
+
+
+def analyze_code(code: str, language: str) -> dict | None:
+    """Analyze code using the appropriate analyzer for the language.
+    
+    Args:
+        code: Source code string
+        language: Programming language name (e.g., "Python", "JavaScript")
+    
+    Returns:
+        Analysis dict with metrics, or None if language not supported
+    """
+    if language.lower() == "python":
+        return analyze_python_code(code)
+    
+    # Try tree-sitter for other languages
+    try:
+        from src.ts_analyzer import analyze_code_treesitter, LANGUAGE_TO_PARSER
+        if language in LANGUAGE_TO_PARSER:
+            return analyze_code_treesitter(code, language)
+    except ImportError:
+        # Graceful degradation if tree-sitter not installed
+        pass
+    
+    return None

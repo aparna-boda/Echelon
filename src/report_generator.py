@@ -175,7 +175,10 @@ def generate_single_report(result: dict, problem_statement: str = "") -> BytesIO
     sa = result.get("static_analysis")
     if sa:
         story.append(PageBreak())
-        story.append(Paragraph("Static Analysis (Python AST)", heading_style))
+        # Dynamic heading based on language
+        lang = result.get("language", "Unknown")
+        analysis_type = "AST" if lang == "Python" else "Tree-sitter"
+        story.append(Paragraph(f"Static Analysis ({lang} {analysis_type})", heading_style))
         
         sa_data = [
             ["Metric", "Value"],

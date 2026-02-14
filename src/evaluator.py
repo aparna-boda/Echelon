@@ -3,7 +3,7 @@ import time
 from src.llm_client import call_llm
 from src.utils import parse_llm_response
 from src.prompts import EVALUATION_SYSTEM_PROMPT, format_prompt
-from src.analyzer import analyze_python_code, format_analysis_for_prompt
+from src.analyzer import analyze_code, format_analysis_for_prompt
 from src.scoring import compute_overall_score, get_verdict
 
 EXPECTED_DIMENSIONS = [
@@ -15,12 +15,12 @@ EXPECTED_DIMENSIONS = [
 def evaluate_code(code: str, language: str, problem_statement: str) -> dict:
     start_time = time.time()
 
-    # Run static analysis for Python submissions
-    static_analysis_result = None
-    static_analysis_text = "Not available (static analysis only supports Python)"
-    if language.lower() == "python":
-        static_analysis_result = analyze_python_code(code)
+    # Run static analysis using the appropriate analyzer
+    static_analysis_result = analyze_code(code, language)
+    if static_analysis_result is not None:
         static_analysis_text = format_analysis_for_prompt(static_analysis_result)
+    else:
+        static_analysis_text = f"Not available (static analysis not supported for {language})"
 
     # Build prompt and call LLM
     prompt = format_prompt(code, language, problem_statement, static_analysis_text)

@@ -6,3 +6,4 @@ plotly
 requests
 pandas
 reportlab
+tree-sitter-language-pack

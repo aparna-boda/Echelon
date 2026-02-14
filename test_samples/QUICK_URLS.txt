@@ -1,0 +1,113 @@
+# Quick Reference: GitHub Raw URLs for Test Samples
+# Replace YOUR_USERNAME with your actual GitHub username
+
+=== PYTHON SAMPLES ===
+
+# Two Sum - Excellent (O(n) hash map solution)
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/python_two_sum_excellent.py
+
+# Two Sum - Poor (O(n²) nested loops)
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/python_two_sum_poor.py
+
+# Fibonacci - Optimal (O(n) iterative with memoization)
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/python_fibonacci_optimal.py
+
+# Fibonacci - Recursive (Poor - exponential complexity)
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/python_fibonacci_recursive.py
+
+# Stack Data Structure - Excellent (OOP with generics)
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/python_stack_excellent.py
+
+
+=== JAVASCRIPT SAMPLES ===
+
+# Palindrome Checker - Good (two implementations)
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/javascript_palindrome_good.js
+
+# String Reversal - Excellent (5 different approaches with benchmarks)
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/javascript_reverse_string.js
+
+# Async/Await API Fetching - Excellent (modern patterns)
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/javascript_async_fetch.js
+
+
+=== JAVA SAMPLES ===
+
+# Binary Search - Excellent (iterative & recursive)
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/java_binary_search.java
+
+# Bubble Sort - Poor (inefficient O(n²))
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/java_bubble_sort.java
+
+
+=== C++ SAMPLES ===
+
+# Linked List - Good (memory-safe with smart pointers)
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/cpp_linked_list.cpp
+
+
+=== GO SAMPLES ===
+
+# Concurrent Array Sum - Excellent (goroutines & channels)
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/go_concurrent_sum.go
+
+
+=== TESTING SCENARIOS ===
+
+# Quality Comparison (test both URLs to compare scores)
+Excellent: https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/python_two_sum_excellent.py
+Poor:      https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/python_two_sum_poor.py
+
+# Multi-Language Batch Test (paste all 5 URLs)
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/python_fibonacci_optimal.py
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/javascript_palindrome_good.js
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/java_binary_search.java
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/cpp_linked_list.cpp
+https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/go_concurrent_sum.go
+
+# Algorithm Efficiency Comparison
+Inefficient: https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/python_fibonacci_recursive.py
+Efficient:   https://raw.githubusercontent.com/YOUR_USERNAME/Echelon/main/test_samples/python_fibonacci_optimal.py
+
+
+=== INSTRUCTIONS ===
+
+1. Find your GitHub username
+2. Replace YOUR_USERNAME in URLs above
+3. Ensure test_samples folder is pushed to your repo
+4. Copy-paste URLs into Echelon's GitHub URL input
+5. Add appropriate problem statement from README.md
+6. Click "Evaluate Code"
+
+
+=== PROBLEM STATEMENTS (for copy-paste) ===
+
+Two Sum:
+Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.
+
+Fibonacci:
+Write a function that returns the nth Fibonacci number. F(n) = F(n-1) + F(n-2) for n > 1.
+
+Palindrome:
+Determine if a given string is a palindrome, ignoring spaces and case.
+
+String Reversal:
+Reverse a given string using various approaches and compare performance.
+
+Binary Search:
+Implement binary search to find the index of a target value in a sorted array. Return -1 if not found.
+
+Bubble Sort:
+Implement the bubble sort algorithm to sort an array of integers.
+
+Linked List:
+Implement a singly linked list with insert, delete, and search operations.
+
+Stack:
+Implement a stack data structure with push, pop, peek, and helper methods.
+
+Async Fetch:
+Implement async API data fetching with error handling, retries, and caching.
+
+Concurrent Sum:
+Calculate array sum using concurrent goroutines with proper synchronization.

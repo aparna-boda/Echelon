@@ -1,40 +1,42 @@
 WEIGHTS = {
-    "correctness": 0.35,
-    "code_quality": 0.20,
-    "efficiency": 0.15,
-    "error_handling": 0.10,
-    "problem_understanding": 0.15,
-    "engineering_maturity": 0.05,
+    "correctness": 0.30,
+    "time_efficiency": 0.15,
+    "space_efficiency": 0.10,
+    "readability": 0.20,
+    "modularity": 0.15,
+    "best_practices": 0.10,
 }
 
 VERDICT_BANDS = [
-    (4.5, "Excellent", "#2ecc71"),
-    (3.5, "Strong", "#27ae60"),
-    (2.5, "Acceptable", "#f39c12"),
-    (1.5, "Weak", "#e67e22"),
-    (0.0, "Poor", "#e74c3c"),
+    (85, "Excellent", "\U0001f7e2"),   # green circle
+    (70, "Strong", "\U0001f535"),       # blue circle
+    (50, "Acceptable", "\U0001f7e1"),   # yellow circle
+    (30, "Weak", "\U0001f7e0"),         # orange circle
+    (0,  "Poor", "\U0001f534"),         # red circle
 ]
 
 DIMENSION_LABELS = {
     "correctness": "Correctness & Edge Cases",
-    "code_quality": "Code Quality & Readability",
-    "efficiency": "Efficiency & Performance",
-    "error_handling": "Error Handling & Robustness",
-    "problem_understanding": "Problem Understanding & Logic Depth",
-    "engineering_maturity": "Engineering Maturity",
+    "time_efficiency": "Time Efficiency",
+    "space_efficiency": "Space Efficiency",
+    "readability": "Readability & Style",
+    "modularity": "Modularity & Structure",
+    "best_practices": "Best Practices",
 }
 
 
-def compute_overall_score(dimensions: dict) -> float:
+def compute_overall_score(dimensions: dict) -> int:
+    """Compute weighted overall score on the 0-100 scale. Returns an int."""
     total = 0.0
     for key, weight in WEIGHTS.items():
-        score = dimensions.get(key, {}).get("score", 0.0)
+        score = dimensions.get(key, {}).get("score", 0)
         total += float(score) * weight
-    return round(total, 2)
+    return round(total)
 
 
-def get_verdict(overall_score: float) -> tuple[str, str]:
-    for threshold, label, color in VERDICT_BANDS:
+def get_verdict(overall_score: int) -> tuple[str, str]:
+    """Return (label, emoji) for the given overall score."""
+    for threshold, label, emoji in VERDICT_BANDS:
         if overall_score >= threshold:
-            return label, color
-    return "Poor", "#e74c3c"
+            return label, emoji
+    return "Poor", "\U0001f534"

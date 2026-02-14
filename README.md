@@ -6,37 +6,47 @@ AI-powered code evaluation engine that scores submissions the way senior enginee
 
 Companies receive hundreds of coding submissions from job applicants. Manual review is slow (15-30 min per submission), inconsistent (different reviewers score differently), and shallow (most only check "does it pass tests?").
 
-**Echelon** evaluates code the way a senior engineer would — combining LLM intelligence with static code analysis to produce recruiter-ready verdicts.
+**Echelon** evaluates code the way a senior engineer would — combining LLM intelligence with static code analysis to produce actionable verdicts on a 0-100 scale.
 
 ## Features
 
-- **6-Dimension Scoring** — Correctness, Code Quality, Efficiency, Error Handling, Problem Understanding, Engineering Maturity
+- **6-Dimension Scoring (0-100)** — Correctness, Time Efficiency, Space Efficiency, Readability, Modularity, Best Practices
 - **Weighted Overall Score** — Computed programmatically with configurable weights
-- **Verdict Bands** — Excellent / Strong / Acceptable / Weak / Poor with color-coded banners
-- **Radar Chart** — Visual overview of strengths and weaknesses across all dimensions
-- **Static Analysis (AST)** — Objective code metrics for Python submissions (functions, docstrings, type hints, nested loops, etc.)
-- **Recruiter Summary** — Plain-English feedback a non-technical recruiter can understand
-- **Interview Questions** — AI-generated follow-up questions based on the submission
-- **Strengths & Red Flags** — Quick-scan lists for decision-making
+- **Verdict Bands** — Excellent (85+) / Strong (70+) / Acceptable (50+) / Weak (30+) / Poor (<30)
+- **3 Input Methods** — GitHub URL (auto-fetch), File Upload, or Paste Code
+- **Auto Language Detection** — From file extension or GitHub URL
+- **Radar Chart** — Visual overview of strengths and weaknesses (0-100 scale)
+- **Progress Bars** — Per-dimension score visualization
+- **Static Analysis (AST)** — Python-specific metrics: functions, nesting depth, naming quality, comment ratio, and more
+- **LLM Fallback** — Groq (primary) with automatic Gemini fallback
+- **Better Approach Suggestions** — AI-generated alternative solutions
+- **Strengths & Improvements** — Side-by-side actionable feedback
 
 ## Architecture
 
 ```
-Code Input → Static Analysis (Python AST)
-                      ↓
-              LLM Evaluation (Groq / Llama 3.3 70B)
-                      ↓
-              Score Computation (Weighted Python logic)
-                      ↓
-              Recruiter Feedback Report (Streamlit UI)
+Code Input (GitHub URL / Upload / Paste)
+              |
+              v
+      Static Analysis (Python AST)
+              |
+              v
+      LLM Evaluation (Groq / Gemini fallback)
+              |
+              v
+      Score Computation (Weighted Python logic)
+              |
+              v
+      Interactive Dashboard (Streamlit)
 ```
 
 | Layer | Role |
 |-------|------|
-| **Static Analysis** (AST) | Objective facts — line count, functions, docstrings, type hints, nested loops |
-| **LLM Evaluation** (Groq) | Subjective judgment — code quality, problem understanding, engineering maturity |
-| **Scoring Logic** (Python) | Final decision — weighted score, verdict, feedback aggregation |
-| **Streamlit UI** | Presentation — interactive dashboard with charts and expandable details |
+| **Input** | GitHub URL fetch, file upload, or direct paste with auto language detection |
+| **Static Analysis** (AST) | Objective facts — line count, functions, nesting depth, naming quality, comment ratio |
+| **LLM Evaluation** (Groq + Gemini) | Subjective judgment — correctness, efficiency, readability, modularity |
+| **Scoring Logic** (Python) | Final decision — weighted 0-100 score, verdict, feedback aggregation |
+| **Streamlit UI** | Presentation — hero score, radar chart, progress bars, expandable details |
 
 ## Tech Stack
 
@@ -44,7 +54,7 @@ Code Input → Static Analysis (Python AST)
 |-----------|------------|
 | Frontend/UI | Streamlit |
 | LLM API (primary) | Groq (Llama 3.3 70B) |
-| LLM API (backup) | Google Gemini |
+| LLM API (fallback) | Google Gemini 2.0 Flash |
 | Static Analysis | Python `ast` module |
 | Visualization | Plotly (radar charts) |
 | Language | Python 3.12 |
@@ -53,18 +63,23 @@ Code Input → Static Analysis (Python AST)
 
 ```
 Echelon/
-├── app.py                 # Streamlit app (entry point)
+├── app.py                    # Streamlit app (entry point)
 ├── src/
 │   ├── __init__.py
-│   ├── prompts.py         # LLM prompt templates & rubric
-│   ├── evaluator.py       # LLM call, JSON parsing, orchestration
-│   ├── analyzer.py        # AST-based static analysis
-│   └── scoring.py         # Weighted score calculation & verdicts
+│   ├── prompts.py            # LLM prompt templates & rubric
+│   ├── evaluator.py          # Orchestration: analysis → LLM → scoring
+│   ├── analyzer.py           # AST-based static analysis (Python)
+│   ├── scoring.py            # Weighted score calculation & verdicts
+│   ├── llm_client.py         # LLM calls with Groq/Gemini fallback
+│   ├── github_fetcher.py     # GitHub URL → raw code fetcher
+│   └── utils.py              # JSON parsing, language detection
 ├── test_submissions/
-│   ├── good_solution.py
-│   ├── ok_solution.py
-│   └── bad_solution.py
-├── .env                   # API keys (not committed)
+│   ├── good_solution.py      # Excellent two-sum (expected: 80+)
+│   ├── ok_solution.py        # Acceptable two-sum (expected: 50-70)
+│   └── bad_solution.py       # Poor two-sum (expected: <40)
+├── .streamlit/
+│   └── config.toml           # Custom theme
+├── .env                      # API keys (not committed)
 ├── .gitignore
 ├── requirements.txt
 └── README.md
@@ -108,29 +123,21 @@ streamlit run app.py
 ## Scoring Formula
 
 ```
-Overall = Correctness × 0.35
-        + Code Quality × 0.20
-        + Efficiency × 0.15
-        + Error Handling × 0.10
-        + Problem Understanding × 0.15
-        + Engineering Maturity × 0.05
+Overall = Correctness      x 0.30
+        + Time Efficiency   x 0.15
+        + Space Efficiency  x 0.10
+        + Readability       x 0.20
+        + Modularity        x 0.15
+        + Best Practices    x 0.10
 ```
 
 | Verdict | Score Range |
 |---------|------------|
-| Excellent | 4.5 – 5.0 |
-| Strong | 3.5 – 4.4 |
-| Acceptable | 2.5 – 3.4 |
-| Weak | 1.5 – 2.4 |
-| Poor | 0.0 – 1.4 |
-
-## Future Enhancements
-
-- Multi-language static analysis support
-- Plagiarism detection across submissions
-- Batch evaluation for recruiting teams
-- GitHub PR workflow integration
-- Export evaluation reports to PDF
+| Excellent | 85 - 100 |
+| Strong | 70 - 84 |
+| Acceptable | 50 - 69 |
+| Weak | 30 - 49 |
+| Poor | 0 - 29 |
 
 ## License
 

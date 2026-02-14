@@ -2,9 +2,9 @@ EVALUATION_SYSTEM_PROMPT = """You are a senior software engineer with 15+ years 
 reviewing code submissions for a hiring decision. You evaluate code rigorously but fairly, \
 like a principal engineer conducting a technical screen."""
 
-EVALUATION_USER_PROMPT = """Evaluate the following code submission against the problem statement.
+EVALUATION_USER_PROMPT = """Evaluate the following code submission.
 
-## Problem Statement
+## Problem Context
 {problem_statement}
 
 ## Programming Language
@@ -18,89 +18,109 @@ EVALUATION_USER_PROMPT = """Evaluate the following code submission against the p
 {code}
 ```
 
-## Evaluation Rubric
+## Evaluation Rubric — Score each dimension from 0 to 100.
 
-Score each dimension from 0.0 to 5.0 (use decimals, e.g. 3.7). Use the FULL range — do NOT cluster scores around 3.
+### Calibration Rules
+- Use the FULL 0-100 range. Do NOT cluster scores around 70.
+- A trivially correct brute-force solution should score ~40-55, not 70.
+- Reserve 90-100 for genuinely excellent, production-quality code.
+- A single-function solution with no error handling caps around 60 for modularity/best_practices.
 
-### Dimensions:
+### Scoring Bands
+| Band | Range | Meaning |
+|------|-------|---------|
+| Excellent | 90-100 | Production-ready, exemplary code |
+| Strong | 70-89 | Solid engineering, minor gaps |
+| Acceptable | 50-69 | Works but has clear weaknesses |
+| Poor | 0-49 | Significant issues or missing fundamentals |
 
-1. **Correctness & Edge Cases** (35% weight)
-   - 5: Handles all cases including edge cases (empty input, duplicates, large input, negative numbers)
-   - 3: Core logic works but misses some edge cases
-   - 1: Fundamental logic errors, fails on basic inputs
+### Dimensions
 
-2. **Code Quality & Readability** (20% weight)
-   - 5: Clean naming, consistent style, well-structured, easy to follow
-   - 3: Readable but some unclear names or inconsistent formatting
-   - 1: Single-letter variables, no structure, hard to understand
+1. **Correctness** (30% weight)
+   - Does it produce the right output for normal, edge, and corner cases?
+   - Consider: empty input, duplicates, negative numbers, large input, single-element input.
 
-3. **Efficiency & Performance** (15% weight)
-   - 5: Optimal time/space complexity for the problem
-   - 3: Acceptable but suboptimal (e.g., O(n²) when O(n) exists)
-   - 1: Brute force, unnecessary nested loops, wasteful memory use
+2. **Time Efficiency** (15% weight)
+   - Is the time complexity optimal for the problem?
+   - Compare detected complexity against the best-known approach.
 
-4. **Error Handling & Robustness** (10% weight)
-   - 5: Validates inputs, handles exceptions, fails gracefully
-   - 3: Some basic checks but not comprehensive
-   - 1: No validation, crashes on bad input
+3. **Space Efficiency** (10% weight)
+   - Is memory usage reasonable? Any unnecessary data structures?
 
-5. **Problem Understanding & Logic Depth** (15% weight)
-   - 5: Demonstrates deep understanding, considers trade-offs, elegant approach
-   - 3: Understands the problem, straightforward solution
-   - 1: Misunderstands requirements, overcomplicated or naive approach
+4. **Readability** (20% weight)
+   - Clear variable/function names? Consistent style? Comments where needed?
+   - Single-letter variables and no structure → low score.
 
-6. **Engineering Maturity** (5% weight)
-   - 5: Docstrings, type hints, modular design, testable code
-   - 3: Some documentation or structure
-   - 1: No documentation, monolithic, untestable
+5. **Modularity** (15% weight)
+   - Is the code broken into logical functions? Is it testable and reusable?
+   - One giant function → low score.
+
+6. **Best Practices** (10% weight)
+   - Error handling, type hints, docstrings, testing patterns, language idioms.
 
 ## Required Output Format
 
-Respond with ONLY valid JSON. No markdown backticks. No text before or after the JSON.
+Respond with ONLY valid JSON. No markdown backticks. No text before or after.
 
 {{
   "dimensions": {{
     "correctness": {{
-      "score": <float 0-5>,
-      "feedback": "<2-3 sentences explaining the score with specific code references>",
-      "suggestion": "<1 concrete improvement suggestion>"
+      "score": <int 0-100>,
+      "test_case_summary": "<which cases pass/fail>",
+      "edge_case_issues": "<specific edge cases missed, or 'none'>",
+      "suggestion": "<1 concrete improvement>"
     }},
-    "code_quality": {{
-      "score": <float 0-5>,
-      "feedback": "<2-3 sentences>",
-      "suggestion": "<1 concrete suggestion>"
+    "time_efficiency": {{
+      "score": <int 0-100>,
+      "detected_complexity": "<e.g. O(n^2)>",
+      "expected_optimal": "<e.g. O(n)>",
+      "explanation": "<why this complexity>",
+      "suggestion": "<1 concrete improvement>"
     }},
-    "efficiency": {{
-      "score": <float 0-5>,
-      "feedback": "<2-3 sentences>",
-      "suggestion": "<1 concrete suggestion>"
+    "space_efficiency": {{
+      "score": <int 0-100>,
+      "detected_complexity": "<e.g. O(n)>",
+      "explanation": "<why this space usage>",
+      "suggestion": "<1 concrete improvement>"
     }},
-    "error_handling": {{
-      "score": <float 0-5>,
-      "feedback": "<2-3 sentences>",
-      "suggestion": "<1 concrete suggestion>"
+    "readability": {{
+      "score": <int 0-100>,
+      "bad_names_found": ["<var1>", "<var2>"],
+      "has_docstring": <true/false>,
+      "has_comments": <true/false>,
+      "style_issues": "<specific issues>",
+      "suggestion": "<1 concrete improvement>"
     }},
-    "problem_understanding": {{
-      "score": <float 0-5>,
-      "feedback": "<2-3 sentences>",
-      "suggestion": "<1 concrete suggestion>"
+    "modularity": {{
+      "score": <int 0-100>,
+      "function_count": <int>,
+      "assessment": "<how well the code is structured>",
+      "suggestion": "<1 concrete improvement>"
     }},
-    "engineering_maturity": {{
-      "score": <float 0-5>,
-      "feedback": "<2-3 sentences>",
-      "suggestion": "<1 concrete suggestion>"
+    "best_practices": {{
+      "score": <int 0-100>,
+      "has_error_handling": <true/false>,
+      "has_type_hints": <true/false>,
+      "has_tests": <true/false>,
+      "issues": "<specific best-practice violations>",
+      "suggestion": "<1 concrete improvement>"
     }}
   }},
+  "overall_score": <int 0-100>,
   "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
-  "red_flags": ["<red flag 1>", "<red flag 2>"],
-  "recruiter_summary": "<2-3 sentence summary a non-technical recruiter can understand>",
-  "interview_questions": ["<follow-up question 1>", "<follow-up question 2>", "<follow-up question 3>"]
+  "improvements": ["<improvement 1>", "<improvement 2>", "<improvement 3>"],
+  "better_approach": "<describe a better approach if one exists, or 'N/A'>"
 }}"""
 
 
-def format_prompt(code: str, language: str, problem_statement: str, static_analysis: str = "Not available") -> str:
+def format_prompt(
+    code: str,
+    language: str,
+    problem_statement: str,
+    static_analysis: str = "Not available",
+) -> str:
     return EVALUATION_USER_PROMPT.format(
-        problem_statement=problem_statement,
+        problem_statement=problem_statement or "No problem context provided.",
         language=language,
         language_lower=language.lower(),
         code=code,

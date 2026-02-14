@@ -1,61 +1,20 @@
-import json
-import os
-import re
+import time
 
-from dotenv import load_dotenv
-from groq import Groq
-
+from src.llm_client import call_llm
+from src.utils import parse_llm_response
 from src.prompts import EVALUATION_SYSTEM_PROMPT, format_prompt
 from src.analyzer import analyze_python_code, format_analysis_for_prompt
 from src.scoring import compute_overall_score, get_verdict
 
-load_dotenv()
-
 EXPECTED_DIMENSIONS = [
-    "correctness", "code_quality", "efficiency",
-    "error_handling", "problem_understanding", "engineering_maturity",
+    "correctness", "time_efficiency", "space_efficiency",
+    "readability", "modularity", "best_practices",
 ]
 
 
-def call_llm(prompt: str) -> str:
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key:
-        raise RuntimeError("GROQ_API_KEY not set in .env")
-
-    client = Groq(api_key=api_key)
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": EVALUATION_SYSTEM_PROMPT},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.3,
-        max_tokens=4096,
-    )
-    return response.choices[0].message.content
-
-
-def parse_response(response_text: str) -> dict:
-    # Strip markdown code fences if the LLM wrapped the JSON
-    cleaned = response_text.strip()
-    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
-    cleaned = re.sub(r"\s*```$", "", cleaned)
-
-    data = json.loads(cleaned)
-
-    # Validate expected structure
-    dims = data.get("dimensions", {})
-    for key in EXPECTED_DIMENSIONS:
-        if key not in dims:
-            raise ValueError(f"Missing dimension: {key}")
-        if "score" not in dims[key]:
-            raise ValueError(f"Missing score for dimension: {key}")
-        dims[key]["score"] = float(dims[key]["score"])
-
-    return data
-
-
 def evaluate_code(code: str, language: str, problem_statement: str) -> dict:
+    start_time = time.time()
+
     # Run static analysis for Python submissions
     static_analysis_result = None
     static_analysis_text = "Not available (static analysis only supports Python)"
@@ -65,16 +24,52 @@ def evaluate_code(code: str, language: str, problem_statement: str) -> dict:
 
     # Build prompt and call LLM
     prompt = format_prompt(code, language, problem_statement, static_analysis_text)
-    raw_response = call_llm(prompt)
-    evaluation = parse_response(raw_response)
+    raw_response = call_llm(prompt, EVALUATION_SYSTEM_PROMPT)
 
-    # Compute weighted overall score (our code, not the LLM)
-    overall_score = compute_overall_score(evaluation["dimensions"])
-    verdict, verdict_color = get_verdict(overall_score)
+    # Parse response
+    evaluation = parse_llm_response(raw_response)
 
-    evaluation["overall_score"] = overall_score
-    evaluation["verdict"] = verdict
-    evaluation["verdict_color"] = verdict_color
-    evaluation["static_analysis"] = static_analysis_result
+    if evaluation.get("error"):
+        elapsed = round(time.time() - start_time, 1)
+        return {
+            "overall_score": 0,
+            "verdict": "Error",
+            "verdict_emoji": "\u274c",
+            "language": language,
+            "dimensions": {},
+            "strengths": [],
+            "improvements": [],
+            "better_approach": None,
+            "static_analysis": static_analysis_result,
+            "evaluation_time_seconds": elapsed,
+            "error": evaluation.get("message", "Failed to parse LLM response"),
+            "raw_response": evaluation.get("raw_response", ""),
+        }
 
-    return evaluation
+    # Validate and fill missing dimensions
+    dims = evaluation.get("dimensions", {})
+    for key in EXPECTED_DIMENSIONS:
+        if key not in dims:
+            dims[key] = {"score": 0, "suggestion": "Dimension not evaluated"}
+        if "score" not in dims[key]:
+            dims[key]["score"] = 0
+        dims[key]["score"] = int(float(dims[key]["score"]))
+
+    # Compute weighted overall score (our code, not the LLM's)
+    overall_score = compute_overall_score(dims)
+    verdict, verdict_emoji = get_verdict(overall_score)
+    elapsed = round(time.time() - start_time, 1)
+
+    return {
+        "overall_score": overall_score,
+        "verdict": verdict,
+        "verdict_emoji": verdict_emoji,
+        "language": language,
+        "dimensions": dims,
+        "strengths": evaluation.get("strengths", []),
+        "improvements": evaluation.get("improvements", []),
+        "better_approach": evaluation.get("better_approach"),
+        "static_analysis": static_analysis_result,
+        "evaluation_time_seconds": elapsed,
+        "error": None,
+    }

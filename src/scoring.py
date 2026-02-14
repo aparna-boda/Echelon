@@ -16,11 +16,11 @@ VERDICT_BANDS = [
 ]
 
 DIMENSION_LABELS = {
-    "correctness": "Correctness & Edge Cases",
+    "correctness": "Correctness &amp; Edge Cases",
     "time_efficiency": "Time Efficiency",
     "space_efficiency": "Space Efficiency",
-    "readability": "Readability & Style",
-    "modularity": "Modularity & Structure",
+    "readability": "Readability &amp; Style",
+    "modularity": "Modularity &amp; Structure",
     "best_practices": "Best Practices",
 }
 

@@ -11,6 +11,21 @@ from src.utils import detect_language
 from src.report_generator import generate_single_report, generate_batch_report
 
 
+# ── Helper Functions ──
+def get_score_color(score: int) -> str:
+    """Get color hex code for a score based on verdict bands."""
+    if score >= 85:
+        return "#00D26A"  # Excellent - Green
+    elif score >= 70:
+        return "#4A9EFF"  # Strong - Blue
+    elif score >= 50:
+        return "#FFB800"  # Acceptable - Yellow
+    elif score >= 30:
+        return "#FF6B35"  # Weak - Orange
+    else:
+        return "#FF3B5C"  # Poor - Red
+
+
 # ── Page Configuration ──
 st.set_page_config(
     page_title="Echelon - AI Code Evaluator",
@@ -23,6 +38,39 @@ st.set_page_config(
 # ══════════════════════════════════════════
 st.markdown("""
 <style>
+/* ── CSS Variables ── */
+:root {
+    /* Score Colors */
+    --color-excellent: #00D26A;
+    --color-strong: #4A9EFF;
+    --color-acceptable: #FFB800;
+    --color-weak: #FF6B35;
+    --color-poor: #FF3B5C;
+
+    /* Brand Colors */
+    --color-primary: #6C63FF;
+    --color-primary-dark: #5A52D5;
+
+    /* UI Colors */
+    --color-background: #0a0a0f;
+    --color-background-lighter: #0d0d14;
+    --color-text-primary: #F0F0F5;
+    --color-text-secondary: #8888A0;
+    --color-border: rgba(255,255,255,0.08);
+
+    /* Spacing Scale */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+
+    /* Border Radius */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+}
+
 /* ── Base overrides ── */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
@@ -261,6 +309,105 @@ section[data-testid="stSidebar"] {
     background: rgba(108,99,255,0.5);
 }
 
+/* ══════════════════════════════════════════
+   RESPONSIVE DESIGN — Mobile & Tablet
+   ══════════════════════════════════════════ */
+
+/* Tablet and below (< 1024px) */
+@media (max-width: 1024px) {
+    .score-ring-outer {
+        width: 160px !important;
+        height: 160px !important;
+    }
+    .score-ring-inner {
+        width: 130px !important;
+        height: 130px !important;
+    }
+    .glass-card {
+        padding: 18px !important;
+    }
+}
+
+/* Mobile and below (< 768px) */
+@media (max-width: 768px) {
+    /* Reduce score ring size */
+    .score-ring-outer {
+        width: 140px !important;
+        height: 140px !important;
+    }
+    .score-ring-inner {
+        width: 110px !important;
+        height: 110px !important;
+    }
+
+    /* Reduce dimension card padding and heights */
+    .glass-card {
+        padding: 14px !important;
+        min-height: auto !important;
+    }
+
+    /* Reduce dimension score font size */
+    .glass-card div[style*="font-size: 36px"] {
+        font-size: 28px !important;
+    }
+
+    /* Reduce progress bar height */
+    .dim-bar-track {
+        height: 8px !important;
+    }
+
+    /* Smaller metric pills */
+    .metric-pill {
+        padding: 10px 14px !important;
+    }
+    .pill-value {
+        font-size: 20px !important;
+    }
+    .pill-label {
+        font-size: 10px !important;
+    }
+
+    /* Reduce header sizes */
+    h1 {
+        font-size: 32px !important;
+    }
+    h2 {
+        font-size: 24px !important;
+    }
+    h3 {
+        font-size: 18px !important;
+    }
+}
+
+/* Small mobile (< 480px) */
+@media (max-width: 480px) {
+    .score-ring-outer {
+        width: 120px !important;
+        height: 120px !important;
+    }
+    .score-ring-inner {
+        width: 94px !important;
+        height: 94px !important;
+    }
+
+    /* Even smaller dimension scores */
+    .glass-card div[style*="font-size: 36px"],
+    .glass-card div[style*="font-size: 28px"] {
+        font-size: 24px !important;
+    }
+
+    /* Tighter spacing */
+    .glass-card {
+        padding: 12px !important;
+        margin-bottom: 12px !important;
+    }
+
+    /* Stack metric pills more tightly */
+    .metric-pill {
+        padding: 8px 12px !important;
+    }
+}
+
 /* ── Hide default Streamlit elements ── */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
@@ -463,16 +610,7 @@ if evaluate_btn:
     dims = result["dimensions"]
 
     # Score color mapping
-    if overall_score >= 85:
-        score_color = "#00D26A"
-    elif overall_score >= 70:
-        score_color = "#4A9EFF"
-    elif overall_score >= 50:
-        score_color = "#FFB800"
-    elif overall_score >= 30:
-        score_color = "#FF6B35"
-    else:
-        score_color = "#FF3B5C"
+    score_color = get_score_color(overall_score)
 
     # ── Hero Score Ring ──
     score_deg = int((overall_score / 100) * 360)
@@ -561,16 +699,7 @@ if evaluate_btn:
             weight_pct = int(WEIGHTS[key] * 100)
 
             # Per-dimension color
-            if dim_score >= 85:
-                dim_color = "#00D26A"
-            elif dim_score >= 70:
-                dim_color = "#4A9EFF"
-            elif dim_score >= 50:
-                dim_color = "#FFB800"
-            elif dim_score >= 30:
-                dim_color = "#FF6B35"
-            else:
-                dim_color = "#FF3B5C"
+            dim_color = get_score_color(dim_score)
 
             with cols[col_idx]:
                 # Card
@@ -580,7 +709,7 @@ if evaluate_btn:
                     <div class="glass-card fade-in" style="min-height: 130px; padding: 18px; overflow: hidden; position: relative;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; position: relative;">
                             <div style="flex: 1; min-width: 0; padding-right: 12px; overflow: hidden;">
-                                <div style="font-size: 14px; font-weight: 600; color: #F0F0F5; line-height: 1.3; margin-bottom: 8px; word-wrap: break-word; overflow-wrap: break-word; overflow: hidden;">
+                                <div style="font-size: 14px; font-weight: 600; color: #F0F0F5; line-height: 1.3; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{label}">
                                     {label}
                                 </div>
                                 <div style="
@@ -626,8 +755,11 @@ if evaluate_btn:
                                 f"**{title}:** {', '.join(str(v) for v in field_val)}"
                             )
                         elif isinstance(field_val, bool):
+                            icon = "✅" if field_val else "❌"
+                            color = "#00D26A" if field_val else "#FF3B5C"
                             st.markdown(
-                                f"**{title}:** {'Yes' if field_val else 'No'}"
+                                f"**{title}:** <span style='color:{color}; font-weight:600;'>{icon} {'Yes' if field_val else 'No'}</span>",
+                                unsafe_allow_html=True
                             )
                         else:
                             st.markdown(f"**{title}:** {field_val}")

@@ -106,7 +106,6 @@ Respond with ONLY valid JSON. No markdown backticks. No text before or after.
       "suggestion": "<1 concrete improvement>"
     }}
   }},
-  "overall_score": <int 0-100>,
   "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
   "improvements": ["<improvement 1>", "<improvement 2>", "<improvement 3>"],
   "better_approach": "<describe a better approach if one exists, or 'N/A'>"

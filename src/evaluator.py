@@ -73,3 +73,106 @@ def evaluate_code(code: str, language: str, problem_statement: str) -> dict:
         "evaluation_time_seconds": elapsed,
         "error": None,
     }
+
+
+def evaluate_batch(
+    submissions: list[dict],
+    problem_statement: str = "",
+    progress_callback=None,
+) -> dict:
+    """
+    Evaluate multiple code submissions in batch.
+    
+    Args:
+        submissions: List of dicts with keys: 'code', 'language', 'name' (optional)
+        problem_statement: Optional problem context for all submissions
+        progress_callback: Optional function(submission_index, total, result) for progress updates
+    
+    Returns:
+        dict with keys:
+            - results: List of evaluation results (one per submission)
+            - summary: Aggregate statistics
+            - total_time: Total evaluation time
+            - errors: List of errors encountered
+    """
+    start_time = time.time()
+    results = []
+    errors = []
+    
+    total = len(submissions)
+    
+    for idx, submission in enumerate(submissions, 1):
+        code = submission.get("code", "")
+        language = submission.get("language", "Python")
+        name = submission.get("name", f"Submission {idx}")
+        
+        if not code.strip():
+            error_msg = f"{name}: Empty code submission"
+            errors.append({"submission": name, "error": error_msg})
+            results.append({
+                "name": name,
+                "error": error_msg,
+                "overall_score": 0,
+                "verdict": "Error",
+            })
+            continue
+        
+        try:
+            result = evaluate_code(code, language, problem_statement)
+            result["name"] = name
+            results.append(result)
+            
+            if progress_callback:
+                progress_callback(idx, total, result)
+                
+        except Exception as e:
+            error_msg = f"{name}: {str(e)}"
+            errors.append({"submission": name, "error": error_msg})
+            results.append({
+                "name": name,
+                "error": error_msg,
+                "overall_score": 0,
+                "verdict": "Error",
+            })
+    
+    # Compute summary statistics
+    successful_results = [r for r in results if not r.get("error")]
+    
+    if successful_results:
+        scores = [r["overall_score"] for r in successful_results]
+        summary = {
+            "total_submissions": total,
+            "successful": len(successful_results),
+            "failed": len(errors),
+            "average_score": round(sum(scores) / len(scores), 1),
+            "min_score": min(scores),
+            "max_score": max(scores),
+            "median_score": sorted(scores)[len(scores) // 2] if scores else 0,
+        }
+        
+        # Count by verdict
+        verdict_counts = {}
+        for r in successful_results:
+            verdict = r.get("verdict", "Unknown")
+            verdict_counts[verdict] = verdict_counts.get(verdict, 0) + 1
+        summary["verdict_distribution"] = verdict_counts
+    else:
+        summary = {
+            "total_submissions": total,
+            "successful": 0,
+            "failed": len(errors),
+            "average_score": 0,
+            "min_score": 0,
+            "max_score": 0,
+            "median_score": 0,
+            "verdict_distribution": {},
+        }
+    
+    total_time = round(time.time() - start_time, 1)
+    
+    return {
+        "results": results,
+        "summary": summary,
+        "total_time": total_time,
+        "errors": errors,
+    }

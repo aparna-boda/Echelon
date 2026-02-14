@@ -13,7 +13,8 @@ Companies receive hundreds of coding submissions from job applicants. Manual rev
 - **6-Dimension Scoring (0-100)** — Correctness, Time Efficiency, Space Efficiency, Readability, Modularity, Best Practices
 - **Weighted Overall Score** — Computed programmatically with configurable weights
 - **Verdict Bands** — Excellent (85+) / Strong (70+) / Acceptable (50+) / Weak (30+) / Poor (<30)
-- **3 Input Methods** — GitHub URL (auto-fetch), File Upload, or Paste Code
+- **4 Input Methods** — GitHub URL (auto-fetch), File Upload, Paste Code, or Batch Upload
+- **Batch Evaluation** — Process multiple submissions at once with summary statistics and export
 - **Auto Language Detection** — From file extension or GitHub URL
 - **Radar Chart** — Visual overview of strengths and weaknesses (0-100 scale)
 - **Progress Bars** — Per-dimension score visualization
@@ -21,6 +22,8 @@ Companies receive hundreds of coding submissions from job applicants. Manual rev
 - **LLM Fallback** — Groq (primary) with automatic Gemini fallback
 - **Better Approach Suggestions** — AI-generated alternative solutions
 - **Strengths & Improvements** — Side-by-side actionable feedback
+- **Export Results** — Download results as CSV, JSON, or PDF reports
+- **Shareable Reports** — Generate shareable links for evaluation results
 
 ## Architecture
 
@@ -138,6 +141,70 @@ Overall = Correctness      x 0.30
 | Acceptable | 50 - 69 |
 | Weak | 30 - 49 |
 | Poor | 0 - 29 |
+
+## Batch Evaluation
+
+Echelon supports batch processing for evaluating multiple code submissions at once. This is ideal for:
+
+- **Classrooms** — Grade all student submissions in one go
+- **Coding Competitions** — Evaluate all participants' solutions
+- **Recruiter Pipelines** — Screen multiple candidates simultaneously
+
+### How to Use Batch Evaluation
+
+1. Navigate to the **"Batch Evaluation"** tab
+2. Upload multiple code files (supports all languages)
+3. Optionally provide problem context (applies to all submissions)
+4. Click **"Evaluate Batch"**
+5. View summary statistics and detailed results table
+6. Export results as CSV or JSON
+
+### Batch Results Include
+
+- **Summary Statistics** — Total, successful, failed, average/min/max/median scores
+- **Results Table** — All submissions with scores, verdicts, and dimension breakdowns
+- **Export Options** — Download as CSV (for Excel/spreadsheets), JSON (for programmatic use), or PDF (professional reports)
+- **Error Handling** — Failed submissions are tracked separately with error messages
+
+## Export & Share Features
+
+Echelon provides multiple ways to export and share evaluation results:
+
+### Single Evaluation Export
+
+- **PDF Report** — Professional PDF document with:
+  - Overall score and verdict
+  - Dimension breakdown with scores and suggestions
+  - Strengths and areas for improvement
+  - Better approach suggestions
+  - Static analysis metrics (for Python)
+  
+- **Shareable Data** — Copy encoded evaluation data to share with others
+  - Recipients can paste the data to view results
+  - Includes scores, verdict, and dimension breakdowns
+
+### Batch Evaluation Export
+
+- **CSV Export** — Spreadsheet-compatible format with all submission data
+- **JSON Export** — Machine-readable format for programmatic use
+- **PDF Report** — Comprehensive batch report with:
+  - Summary statistics (average, min, max, median scores)
+  - Verdict distribution
+  - Individual results table
+  - All evaluation metrics
+
+### How to Use Export Features
+
+1. **After evaluation**, scroll to the "Export & Share" section
+2. **For PDF**: Click "Download PDF Report" — opens in your PDF viewer
+3. **For CSV/JSON**: Click respective download buttons
+4. **To Share**: Copy the shareable data and send to recipients
+
+## Future Enhancements
+
+- Multi-language static analysis (JavaScript, Java, C/C++)
+- Plagiarism / similarity detection across submissions
+- GitHub PR integration for inline review comments
 
 ## License
 

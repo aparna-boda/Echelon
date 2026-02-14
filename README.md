@@ -6,12 +6,23 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.31+-FF4B4B.svg)](https://streamlit.io)
 [![Built for Hackathon](https://img.shields.io/badge/Built%20for-UnsaidTalks%20Hackathon%202026-orange)](https://github.com)
+[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Try_Now-FF4B4B?style=for-the-badge)](https://echelon-4kmebwinbetejlophhhckd.streamlit.app/)
 
 **AI-powered code evaluation that scores submissions the way senior engineers do — beyond test cases, across 6 dimensions of engineering quality.**
+
+### 🌐 **[Try Live Demo →](https://echelon-4kmebwinbetejlophhhckd.streamlit.app/)**
 
 [📖 Full Documentation](DOCUMENTATION.md) • [🚀 Quick Start](#-quick-start) • [✨ Features](#-features) • [🎥 Demo](#-demo)
 
 </div>
+
+---
+
+## 🌐 Live Demo
+
+### **[🚀 Try Echelon Now - No Installation Required](https://echelon-4kmebwinbetejlophhhckd.streamlit.app/)**
+
+Experience Echelon instantly in your browser! Evaluate code in 10+ languages with AI-powered analysis.
 
 ---
 
@@ -74,6 +85,18 @@ Python • JavaScript • TypeScript • Java • C • C++ • Go • Ruby • 
 
 ## 🚀 Quick Start
 
+### Option 1: Try Live Demo (Instant)
+
+**No installation needed!** Just visit:
+
+**🌐 [https://echelon-4kmebwinbetejlophhhckd.streamlit.app/](https://echelon-4kmebwinbetejlophhhckd.streamlit.app/)**
+
+Start evaluating code immediately in your browser!
+
+---
+
+### Option 2: Run Locally
+
 ### 1️⃣ Clone Repository
 ```bash
 git clone https://github.com/aparna-boda/Echelon.git
@@ -112,6 +135,20 @@ Open browser at `http://localhost:8501`
 ---
 
 ## 🎥 Demo
+
+### 📹 Video Walkthrough
+
+Watch Echelon in action:
+
+<div align="center">
+
+https://github.com/aparna-boda/Echelon/assets/demo-video.webm
+
+</div>
+
+*Full demo showing code evaluation, 6-dimension analysis, and report generation*
+
+---
 
 ### Evaluation Results
 
@@ -246,6 +283,16 @@ MIT License - see [LICENSE](LICENSE) file for details
 ---
 
 <div align="center">
+
+---
+
+## 🚀 Try Echelon Live
+
+### **[Launch Live Demo →](https://echelon-4kmebwinbetejlophhhckd.streamlit.app/)**
+
+Evaluate code instantly without any installation!
+
+---
 
 ### ⭐ Star this repo if you find it useful!
 

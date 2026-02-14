@@ -420,6 +420,35 @@ section[data-testid="stSidebar"] {
     }
 }
 
+/* ── Expander styling (slide-in panel look) ── */
+.stExpander {
+    background: rgba(255,255,255,0.02) !important;
+    border: 1px solid rgba(108,99,255,0.2) !important;
+    border-radius: 12px !important;
+    margin-top: 12px !important;
+    overflow: hidden !important;
+}
+.stExpander summary {
+    background: rgba(108,99,255,0.08) !important;
+    padding: 12px 16px !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    color: #A299FF !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+.stExpander summary:hover {
+    background: rgba(108,99,255,0.15) !important;
+    color: #B8B0FF !important;
+}
+.stExpander[open] summary {
+    border-bottom: 1px solid rgba(108,99,255,0.15) !important;
+    margin-bottom: 12px !important;
+}
+.stExpander > div > div {
+    padding: 12px 16px !important;
+}
+
 /* ── Hide default Streamlit elements ── */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
@@ -453,6 +482,17 @@ st.markdown(
 # ══════════════════════════════════════════
 # INPUT SECTION
 # ══════════════════════════════════════════
+
+# ── Problem statement (required) ──
+problem_statement = st.text_area(
+    "Problem Statement",
+    placeholder="Describe the problem this code is solving (e.g., 'Two Sum: Given an array of integers and a target, return indices of two numbers that add up to the target')",
+    height=100,
+    help="Required - The AI needs to know what problem the code is solving to properly evaluate correctness and approach"
+)
+
+st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+
 tab_github, tab_upload, tab_paste = st.tabs(
     ["GitHub URL", "File Upload", "Paste Code"]
 )
@@ -510,15 +550,6 @@ with tab_paste:
 
 # Single evaluation only - batch feature removed
 
-st.markdown("</div>", unsafe_allow_html=True)
-
-# ── Optional problem context ──
-problem_statement = st.text_area(
-    "Problem Context (optional)",
-    placeholder="Describe the problem being solved — helps the AI evaluate correctness and approach...",
-    height=100,
-)
-
 # ── Evaluation button ──
 evaluate_btn = st.button("Evaluate", type="primary", use_container_width=True)
 
@@ -528,6 +559,10 @@ evaluate_btn = st.button("Evaluate", type="primary", use_container_width=True)
 if evaluate_btn:
     if not code.strip():
         st.warning("Please provide code to evaluate — use one of the input tabs above.")
+        st.stop()
+
+    if not problem_statement.strip():
+        st.warning("Please provide a problem statement — the AI needs to know what problem the code is solving to properly evaluate correctness.")
         st.stop()
 
     progress_placeholder = st.empty()
@@ -669,65 +704,37 @@ if evaluate_btn:
             dim_color = get_score_color(dim_score)
 
             with cols[col_idx]:
-                # Card
-                st.markdown(
-                    f"""
-                <div style="margin-bottom: 20px; overflow: hidden; position: relative;">
-                    <div class="glass-card fade-in" style="min-height: 130px; padding: 18px; overflow: hidden; position: relative;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; position: relative;">
-                            <div style="flex: 1; min-width: 0; padding-right: 12px; overflow: hidden;">
-                                <div style="font-size: 14px; font-weight: 600; color: #F0F0F5; line-height: 1.3; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{label}">
-                                    {label}
-                                </div>
-                                <div style="
-                                    display: inline-block;
-                                    background: rgba(108,99,255,0.15);
-                                    color: #6C63FF;
-                                    font-size: 10px;
-                                    font-weight: 600;
-                                    padding: 4px 10px;
-                                    border-radius: 12px;
-                                    white-space: nowrap;
-                                    margin-top: 4px;
-                                ">{weight_pct}% weight</div>
-                            </div>
-                            <div style="font-size: 36px; font-weight: 800; color: {dim_color}; flex-shrink: 0; line-height: 1; position: relative;">{dim_score}</div>
-                        </div>
-                        <div style="margin-top: 14px; clear: both; position: relative; overflow: hidden;">
-                            <div class="dim-bar-track">
-                                <div class="dim-bar-fill" style="
-                                    width: {dim_score}%;
-                                    background: linear-gradient(90deg, #6C63FF, {dim_color});
-                                "></div>
-                            </div>
+                # Dimension card
+                st.markdown(f'''
+                <div class="glass-card" style="padding: 24px; margin-bottom: 20px;">
+                    <div style="margin-bottom: 18px;">
+                        <div style="font-size: 14px; font-weight: 700; color: #B8B5D1; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">{label}</div>
+                        <div style="display: flex; align-items: baseline; gap: 12px;">
+                            <div style="font-size: 48px; font-weight: 900; color: {dim_color}; line-height: 1;">{dim_score}</div>
+                            <div style="font-size: 16px; color: #6B6B80; font-weight: 600;">/ 100</div>
+                            <div style="margin-left: auto; background: rgba(108,99,255,0.12); color: #9B94FF; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px;">{weight_pct}%</div>
                         </div>
                     </div>
+                    <div class="dim-bar-track">
+                        <div class="dim-bar-fill" style="width: {dim_score}%; background: linear-gradient(90deg, rgba(108,99,255,0.8), {dim_color});"></div>
+                    </div>
                 </div>
-                """,
-                    unsafe_allow_html=True,
-                )
+                ''', unsafe_allow_html=True)
 
-                # Details expander
-                with st.expander("📋 View Details", expanded=False):
-                    st.markdown(f"### {label}")
-                    st.divider()
+                # Details in a styled expander
+                with st.expander(">>", expanded=False):
                     for field_key, field_val in dim.items():
                         if field_key == "score":
                             continue
                         title = field_key.replace("_", " ").title()
                         if field_key == "suggestion":
-                            st.markdown(f"**💡 Suggestion:** {field_val}")
+                            st.markdown(f"**💡 Suggestion**")
+                            st.info(field_val)
                         elif isinstance(field_val, list):
-                            st.markdown(
-                                f"**{title}:** {', '.join(str(v) for v in field_val)}"
-                            )
+                            st.markdown(f"**{title}:** {', '.join(str(v) for v in field_val) if field_val else 'None'}")
                         elif isinstance(field_val, bool):
                             icon = "✅" if field_val else "❌"
-                            color = "#00D26A" if field_val else "#FF3B5C"
-                            st.markdown(
-                                f"**{title}:** <span style='color:{color}; font-weight:600;'>{icon} {'Yes' if field_val else 'No'}</span>",
-                                unsafe_allow_html=True
-                            )
+                            st.markdown(f"**{title}:** {icon} {'Yes' if field_val else 'No'}")
                         else:
                             st.markdown(f"**{title}:** {field_val}")
 

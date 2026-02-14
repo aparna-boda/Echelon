@@ -278,7 +278,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 - 🐛 [Report Issues](https://github.com/aparna-boda/Echelon/issues)
 - 💬 [Discussions](https://github.com/aparna-boda/Echelon/discussions)
-- 📧 Email: aparna.boda@example.com
+- 📧 Email: aparna.boda@gmail.com
 
 ---
 

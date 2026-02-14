@@ -9,6 +9,7 @@ from src.scoring import DIMENSION_LABELS, WEIGHTS
 from src.github_fetcher import fetch_github_code
 from src.utils import detect_language
 from src.report_generator import generate_single_report
+from src.plagiarism import detect_plagiarism
 
 
 # ── Helper Functions ──
@@ -453,8 +454,8 @@ st.markdown(
 # ══════════════════════════════════════════
 # INPUT SECTION
 # ══════════════════════════════════════════
-tab_github, tab_upload, tab_paste = st.tabs(
-    ["GitHub URL", "File Upload", "Paste Code"]
+tab_github, tab_upload, tab_paste, tab_similarity = st.tabs(
+    ["GitHub URL", "File Upload", "Paste Code", "Similarity Check"]
 )
 
 code = ""
@@ -508,9 +509,202 @@ with tab_paste:
         code = pasted_code
         language = language_select
 
-# Single evaluation only - batch feature removed
+with tab_similarity:
+    st.markdown("""
+    <div style="margin-bottom: 16px;">
+        <p style="color: #8888A0; font-size: 14px; margin: 0;">
+            Upload multiple code files to check for similarity and potential plagiarism.
+            Uses text, token, and structural analysis — no AI calls required.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-st.markdown("</div>", unsafe_allow_html=True)
+    sim_files = st.file_uploader(
+        "Upload code files to compare",
+        type=["py", "js", "ts", "java", "c", "cpp", "cc", "go", "rb", "rs"],
+        accept_multiple_files=True,
+        key="sim_uploader",
+    )
+
+    sim_threshold = st.slider(
+        "Flagging threshold (%)", min_value=30, max_value=95, value=60, step=5,
+        help="Pairs with similarity above this threshold are flagged.",
+    )
+
+    sim_btn = st.button(
+        "Check Similarity",
+        type="primary",
+        use_container_width=True,
+        disabled=len(sim_files) < 2 if sim_files else True,
+        key="sim_btn",
+    )
+
+    if sim_files and len(sim_files) < 2:
+        st.info("Upload at least 2 files to compare.")
+
+    if sim_btn and sim_files and len(sim_files) >= 2:
+        submissions = []
+        for f in sim_files:
+            file_code = f.read().decode("utf-8", errors="replace")
+            file_lang = detect_language(f.name)
+            submissions.append({"name": f.name, "code": file_code, "language": file_lang})
+
+        with st.spinner("Analyzing similarity..."):
+            sim_result = detect_plagiarism(submissions, threshold=float(sim_threshold))
+
+        # ── Summary stats ──
+        max_sim = max((p["overall"] for p in sim_result["pairs"]), default=0)
+        n_files = len(sim_result["names"])
+        n_flagged = sim_result["flagged_count"]
+        flag_color = "#FF3B5C" if n_flagged > 0 else "#00D26A"
+
+        st.markdown(f"""
+        <div class="glass-card fade-in">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px;">
+                <div class="metric-pill">
+                    <div class="pill-value">{n_files}</div>
+                    <div class="pill-label">FILES</div>
+                </div>
+                <div class="metric-pill">
+                    <div class="pill-value" style="color: {flag_color};">{n_flagged}</div>
+                    <div class="pill-label">FLAGGED PAIRS</div>
+                </div>
+                <div class="metric-pill">
+                    <div class="pill-value">{max_sim:.1f}%</div>
+                    <div class="pill-label">MAX SIMILARITY</div>
+                </div>
+                <div class="metric-pill">
+                    <div class="pill-value">{sim_threshold}%</div>
+                    <div class="pill-label">THRESHOLD</div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # ── Heatmap ──
+        st.markdown("""
+        <div style="margin-top: 10px; margin-bottom: 12px;">
+            <h3 style="color: #F0F0F5; font-weight: 700; font-size: 20px; margin-bottom: 4px;">Similarity Matrix</h3>
+            <p style="color: #8888A0; font-size: 13px; margin-top: 0;">Pairwise similarity between all uploaded files</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        heatmap_fig = go.Figure(data=go.Heatmap(
+            z=sim_result["matrix"],
+            x=sim_result["names"],
+            y=sim_result["names"],
+            colorscale=[
+                [0.0, "#0d1b2a"],
+                [0.3, "#1b2838"],
+                [0.5, "#6C63FF"],
+                [0.7, "#9b59b6"],
+                [1.0, "#FF3B5C"],
+            ],
+            zmin=0,
+            zmax=100,
+            text=[[f"{v:.1f}%" for v in row] for row in sim_result["matrix"]],
+            texttemplate="%{text}",
+            textfont=dict(size=12, color="#F0F0F5"),
+            hovertemplate="<b>%{x}</b> vs <b>%{y}</b><br>Similarity: %{z:.1f}%<extra></extra>",
+            colorbar=dict(
+                title="Similarity %",
+                titlefont=dict(color="#8888A0"),
+                tickfont=dict(color="#8888A0"),
+            ),
+        ))
+        heatmap_fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            margin=dict(l=20, r=20, t=20, b=20),
+            height=max(350, 60 * n_files + 100),
+            xaxis=dict(tickfont=dict(color="#F0F0F5", size=11), side="bottom"),
+            yaxis=dict(tickfont=dict(color="#F0F0F5", size=11), autorange="reversed"),
+        )
+        st.plotly_chart(heatmap_fig, use_container_width=True)
+
+        # ── Flagged pairs ──
+        flagged = [p for p in sim_result["pairs"] if p["overall"] >= sim_threshold]
+        if flagged:
+            st.markdown("""
+            <div style="margin-top: 10px; margin-bottom: 12px;">
+                <h3 style="color: #F0F0F5; font-weight: 700; font-size: 20px; margin-bottom: 4px;">Flagged Pairs</h3>
+                <p style="color: #8888A0; font-size: 13px; margin-top: 0;">Pairs exceeding the similarity threshold</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            for pair in flagged:
+                is_high = pair["flag"] == "high"
+                border_color = "#FF3B5C" if is_high else "#FFB800"
+                flag_label = "HIGH" if is_high else "MEDIUM"
+                flag_bg = "rgba(255,59,92,0.15)" if is_high else "rgba(255,184,0,0.15)"
+                bar_gradient = f"linear-gradient(90deg, #6C63FF, {border_color})"
+                overall_val = pair["overall"]
+
+                struct_html = ""
+                if pair["structural_sim"] is not None:
+                    struct_html = f"""
+                    <div style="flex: 1; min-width: 100px;">
+                        <div style="font-size: 11px; color: #8888A0; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Structural</div>
+                        <div style="font-size: 16px; font-weight: 600; color: #F0F0F5;">{pair['structural_sim']:.1f}%</div>
+                    </div>"""
+
+                st.markdown(f"""
+                <div class="glass-card fade-in" style="border-left: 3px solid {border_color};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <span style="color: #F0F0F5; font-weight: 600; font-size: 15px;">{pair['sub_a']}</span>
+                            <span style="color: #8888A0; margin: 0 8px;">vs</span>
+                            <span style="color: #F0F0F5; font-weight: 600; font-size: 15px;">{pair['sub_b']}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="
+                                background: {flag_bg};
+                                color: {border_color};
+                                font-size: 10px;
+                                font-weight: 700;
+                                padding: 4px 10px;
+                                border-radius: 12px;
+                                letter-spacing: 0.5px;
+                            ">{flag_label}</span>
+                            <span style="font-size: 24px; font-weight: 800; color: {border_color};">{overall_val:.1f}%</span>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 14px;">
+                        <div class="dim-bar-track">
+                            <div class="dim-bar-fill" style="width: {overall_val}%; background: {bar_gradient};"></div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 100px;">
+                            <div style="font-size: 11px; color: #8888A0; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Text</div>
+                            <div style="font-size: 16px; font-weight: 600; color: #F0F0F5;">{pair['text_sim']:.1f}%</div>
+                        </div>
+                        <div style="flex: 1; min-width: 100px;">
+                            <div style="font-size: 11px; color: #8888A0; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Token</div>
+                            <div style="font-size: 16px; font-weight: 600; color: #F0F0F5;">{pair['token_sim']:.1f}%</div>
+                        </div>
+                        {struct_html}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="glass-card fade-in" style="border-left: 3px solid #00D26A; text-align: center;">
+                <p style="color: #00D26A; font-size: 16px; font-weight: 600; margin: 0;">
+                    No pairs exceed the similarity threshold — all submissions appear independent.
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # ── All pairs table (collapsed) ──
+        with st.expander("View all pair scores", expanded=False):
+            for pair in sim_result["pairs"]:
+                struct_str = f"{pair['structural_sim']:.1f}%" if pair["structural_sim"] is not None else "N/A"
+                st.markdown(
+                    f"**{pair['sub_a']}** vs **{pair['sub_b']}** — "
+                    f"Overall: **{pair['overall']:.1f}%** "
+                    f"(Text: {pair['text_sim']:.1f}%, Token: {pair['token_sim']:.1f}%, Structural: {struct_str})"
+                )
 
 # ── Optional problem context ──
 problem_statement = st.text_area(
@@ -708,7 +902,7 @@ if evaluate_btn:
                 )
 
                 # Details expander
-                with st.expander("📋 View Details", expanded=False):
+                with st.expander("View Details", expanded=False):
                     st.markdown(f"### {label}")
                     st.divider()
                     for field_key, field_val in dim.items():
@@ -716,16 +910,16 @@ if evaluate_btn:
                             continue
                         title = field_key.replace("_", " ").title()
                         if field_key == "suggestion":
-                            st.markdown(f"**💡 Suggestion:** {field_val}")
+                            st.markdown(f"**Suggestion:** {field_val}")
                         elif isinstance(field_val, list):
                             st.markdown(
                                 f"**{title}:** {', '.join(str(v) for v in field_val)}"
                             )
                         elif isinstance(field_val, bool):
-                            icon = "✅" if field_val else "❌"
+                            icon = "Yes" if field_val else "No"
                             color = "#00D26A" if field_val else "#FF3B5C"
                             st.markdown(
-                                f"**{title}:** <span style='color:{color}; font-weight:600;'>{icon} {'Yes' if field_val else 'No'}</span>",
+                                f"**{title}:** <span style='color:{color}; font-weight:600;'>{icon}</span>",
                                 unsafe_allow_html=True
                             )
                         else:
@@ -853,7 +1047,7 @@ if evaluate_btn:
     try:
         pdf_buffer = generate_single_report(result, problem_statement)
         st.download_button(
-            label="📄 Download PDF Report",
+            label="Download PDF Report",
             data=pdf_buffer.getvalue(),
             file_name=f"echelon_report_{overall_score}_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.pdf",
             mime="application/pdf",
